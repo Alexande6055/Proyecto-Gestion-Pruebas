@@ -22,7 +22,7 @@ Relaciones clave:
 2. Casos de uso principales (diagrama de secuencia simplificado)
 CU1 – Registro y verificación
 
-    Usuario ingresa correo institucional y datos básicos.
+    Usuario ingresa correo institucional (example@uta.edu.ec) y datos básicos.
 
     Sistema envía código/enlace de verificación al correo.
 

@@ -9,6 +9,8 @@ import { Request } from './modules/requests/entities/request.entity';
 import { Rating } from './modules/ratings/entities/rating.entity';
 import { Report } from './modules/reports/entities/report.entity';
 import { AuditLog } from './modules/audit/entities/audit-log.entity';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -27,9 +29,10 @@ import { AuditLog } from './modules/audit/entities/audit-log.entity';
         database: configService.get<string>('DB_NAME'),
         entities: [User, Trip, Request, Rating, Report, AuditLog],
         synchronize: configService.get<boolean>('DB_SYNCHRONIZE'),
-        autoLoadEntities: true,
       }),
     }),
+    AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
