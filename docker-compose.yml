@@ -1,0 +1,27 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16
+    container_name: gestion_pruebas_db
+    restart: always
+
+    environment:
+      POSTGRES_DB: g_pruebas
+      POSTGRES_USER: pruebas
+      POSTGRES_PASSWORD: adb123*@
+
+    ports:
+      - "5454:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
