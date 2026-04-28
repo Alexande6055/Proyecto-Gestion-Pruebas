@@ -11,6 +11,7 @@ import { Report } from './modules/reports/entities/report.entity';
 import { AuditLog } from './modules/audit/entities/audit-log.entity';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { TripsModule } from './modules/trips/trips.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { UsersModule } from './modules/users/users.module';
     }),
     AuthModule,
     UsersModule,
+    TripsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
