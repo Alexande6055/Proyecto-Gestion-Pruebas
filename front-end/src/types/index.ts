@@ -1,4 +1,4 @@
-export type ViewKey = 'dashboard' | 'users' | 'trips' | 'requests' | 'ratings' | 'reports' | 'audit_logs'
+export type ViewKey = 'dashboard' | 'users' | 'trips' | 'requests' | 'ratings' | 'reports' | 'audit_logs' | 'profile'
 export type EntityRow = Record<string, string | number | null | undefined>
 export type StatusTone = 'ok' | 'warning' | 'danger' | 'info' | 'neutral'
 export type FieldKind = 'text' | 'number' | 'datetime-local' | 'select' | 'textarea'

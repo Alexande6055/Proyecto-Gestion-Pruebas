@@ -22,6 +22,7 @@ import { Badge } from './components/common/Badge'
 import { AuthView } from './pages/Auth/AuthView'
 import { DashboardView } from './pages/Dashboard/DashboardView'
 import { EntityView } from './pages/Entity/EntityView'
+import { ProfileView } from './pages/Profile/ProfileView'
 
 function App() {
   const [session, setSession] = useState<AuthSession | null>(() => {
@@ -46,6 +47,7 @@ function App() {
     ratings: initialEntityState,
     reports: initialEntityState,
     audit_logs: initialEntityState,
+    profile: initialEntityState,
   })
 
   useEffect(() => {
@@ -130,6 +132,8 @@ function App() {
 
   const currentView = activeView === 'dashboard'
     ? <DashboardView data={data} />
+    : activeView === 'profile'
+    ? <ProfileView session={session} onSessionUpdate={setSession} />
     : (
       <EntityView
         config={entityConfigs[activeView]}

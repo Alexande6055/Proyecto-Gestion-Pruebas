@@ -134,6 +134,37 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
       { key: 'fecha_hora', label: 'Fecha y hora', kind: 'datetime-local' },
     ],
   },
+  profile: {
+    key: 'profile',
+    title: 'Mi Perfil',
+    subtitle: 'Informacion del usuario actual.',
+    endpoint: '/api/profile',
+    columns: [
+      'id',
+      'correo_institucional',
+      'nombre',
+      'carrera',
+      'foto_url',
+      'telefono',
+      'zona_barrio',
+      'rol',
+      'reputacion_promedio',
+      'total_viajes',
+      'estado',
+    ],
+    fields: [
+      { key: 'correo_institucional', label: 'Correo institucional' },
+      { key: 'nombre', label: 'Nombre' },
+      { key: 'carrera', label: 'Carrera' },
+      { key: 'foto_url', label: 'Foto URL' },
+      { key: 'telefono', label: 'Telefono' },
+      { key: 'zona_barrio', label: 'Zona o barrio' },
+      { key: 'rol', label: 'Rol', kind: 'select', options: ['estudiante', 'admin'] },
+      { key: 'reputacion_promedio', label: 'Reputacion promedio', kind: 'number' },
+      { key: 'total_viajes', label: 'Total viajes', kind: 'number' },
+      { key: 'estado', label: 'Estado', kind: 'select', options: ['activo', 'suspendido', 'advertido'] },
+    ],
+  },
 }
 
 export const viewLabels: Record<ViewKey, string> = {
@@ -144,6 +175,7 @@ export const viewLabels: Record<ViewKey, string> = {
   ratings: 'Calificaciones',
   reports: 'Reportes',
   audit_logs: 'Auditoria',
+  profile: 'Mi Perfil',
 }
 
 export const statusTone: Record<string, StatusTone> = {
