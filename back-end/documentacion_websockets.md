@@ -59,6 +59,22 @@ Un conductor acepta o rechaza una solicitud pendiente.
   }
   ```
 
+### `cancel_request`
+Un pasajero o el conductor cancelan una reserva (debe tener motivo).
+- **Payload**:
+  ```json
+  {
+    "requestId": "UUID-de-la-solicitud",
+    "reason": "Motivo de la cancelación"
+  }
+  ```
+- **Respuesta (Ack)**:
+  ```json
+  {
+    "status": "cancelada"
+  }
+  ```
+
 ---
 
 ## 3. Eventos de Servidor (Outbound)
@@ -84,7 +100,19 @@ Notifica al **pasajero** que su solicitud ha cambiado de estado.
   ```json
   {
     "requestId": "UUID-de-la-solicitud",
-    "status": "aceptada" | "rechazada"
+    "status": "aceptada" | "rechazada" | "cancelada"
+  }
+  ```
+
+### `request_cancelled`
+Notifica a la otra parte que una solicitud ha sido cancelada.
+- **Escuchar en**: Sala del usuario afectado.
+- **Payload**:
+  ```json
+  {
+    "requestId": "UUID-de-la-solicitud",
+    "reason": "Motivo de la cancelación",
+    "cancelledBy": "UUID-de-quien-cancelo"
   }
   ```
 

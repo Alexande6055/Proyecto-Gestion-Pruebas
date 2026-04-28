@@ -69,4 +69,32 @@ export class RequestsGateway implements OnGatewayConnection {
 
     return { status: updatedRequest.estado };
   }
+
+  @UseGuards(WsJwtGuard)
+  @SubscribeMessage('cancel_request')
+  async handleCancelRequest(
+    @MessageBody() data: { requestId: string; reason: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const user = client['user'];
+    const cancelledRequest = await this.requestsService.cancelRequest(
+      data.requestId,
+      user.userId,
+      data.reason,
+    );
+
+    // Notificar a la otra parte
+    const targetId =
+      user.userId === cancelledRequest.pasajeroId
+        ? cancelledRequest.viaje.conductorId
+        : cancelledRequest.pasajeroId;
+
+    this.server.to(`user_${targetId}`).emit('request_cancelled', {
+      requestId: cancelledRequest.id,
+      reason: data.reason,
+      cancelledBy: user.userId,
+    });
+
+    return { status: 'cancelada' };
+  }
 }

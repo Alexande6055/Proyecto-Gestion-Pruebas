@@ -61,4 +61,38 @@ export class RequestsService {
     request.estado = status;
     return this.requestsRepository.save(request);
   }
+
+  async cancelRequest(requestId: string, userId: string, reason: string): Promise<Request> {
+    const request = await this.requestsRepository.findOne({
+      where: { id: requestId },
+      relations: ['viaje'],
+    });
+
+    if (!request) throw new NotFoundException('Solicitud no encontrada');
+    
+    const isPassenger = request.pasajeroId === userId;
+    const isConductor = request.viaje.conductorId === userId;
+
+    if (!isPassenger && !isConductor) {
+      throw new BadRequestException('No tienes permiso para cancelar esta solicitud');
+    }
+
+    if (request.estado === RequestStatus.CANCELADA) {
+      throw new BadRequestException('La solicitud ya está cancelada');
+    }
+
+    // Si estaba aceptada, devolvemos el cupo
+    if (request.estado === RequestStatus.ACEPTADA) {
+      request.viaje.cupos_disponibles += 1;
+      if (request.viaje.estado === TripStatus.COMPLETO) {
+        request.viaje.estado = TripStatus.ABIERTO;
+      }
+      await this.tripsRepository.save(request.viaje);
+    }
+
+    request.estado = RequestStatus.CANCELADA;
+    request.motivo_cancelacion = reason;
+    
+    return this.requestsRepository.save(request);
+  }
 }
