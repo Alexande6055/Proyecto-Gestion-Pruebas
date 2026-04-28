@@ -1,8 +1,9 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { RegisterDto } from '../../auth/dtos/register.dto';
+import { UpdateUserDto } from '../dtos/update-user.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -38,5 +39,27 @@ export class UsersService {
 
   async findById(id: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { id } });
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    Object.assign(user, updateUserDto);
+    return this.usersRepository.save(user);
+  }
+
+  async updatePassword(id: string, newPassword: string): Promise<void> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await this.usersRepository.update(id, { password_hash: hashedPassword });
   }
 }
