@@ -41,4 +41,13 @@ export class TripsController {
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.tripsService.findOne(id);
   }
+
+  @Post(':id/complete')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Marcar un viaje como finalizado (solo conductor)' })
+  @ApiResponse({ status: 200, description: 'Viaje finalizado exitosamente' })
+  complete(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return this.tripsService.completeTrip(id, req.user.userId);
+  }
 }

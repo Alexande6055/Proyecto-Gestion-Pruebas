@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { Trip, TripStatus } from './entities/trip.entity';
@@ -51,5 +51,18 @@ export class TripsService {
       throw new NotFoundException('Viaje no encontrado');
     }
     return trip;
+  }
+
+  async completeTrip(tripId: string, conductorId: string): Promise<Trip> {
+    const trip = await this.findOne(tripId);
+    if (trip.conductorId !== conductorId) {
+      throw new BadRequestException('Solo el conductor puede finalizar el viaje');
+    }
+    if (trip.estado !== TripStatus.ABIERTO && trip.estado !== TripStatus.COMPLETO) {
+      throw new BadRequestException('El viaje no se puede finalizar en su estado actual');
+    }
+
+    trip.estado = TripStatus.FINALIZADO;
+    return this.tripsRepository.save(trip);
   }
 }

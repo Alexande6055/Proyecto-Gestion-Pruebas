@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { RequestsModule } from './modules/requests/requests.module';
+import { RatingsModule } from './modules/ratings/ratings.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { RequestsModule } from './modules/requests/requests.module';
     UsersModule,
     TripsModule,
     RequestsModule,
+    RatingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

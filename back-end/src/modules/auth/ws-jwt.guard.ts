@@ -29,7 +29,8 @@ export class WsJwtGuard implements CanActivate {
       client['user'] = payload;
       return true;
     } catch (err) {
-      this.logger.error(`WebSocket Auth Error: ${err.message}`);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      this.logger.error(`WebSocket Auth Error: ${errorMessage}`);
       throw new WsException('Unauthorized');
     }
   }
