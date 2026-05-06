@@ -14,10 +14,10 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     title: 'Usuarios',
     subtitle: 'Registro institucional, seguridad, rol, reputacion y estado.',
     endpoint: '/api/users',
+    createEndpoint: '/api/auth/register',
     columns: [
       'id',
       'correo_institucional',
-      'password_hash',
       'nombre',
       'carrera',
       'foto_url',
@@ -31,15 +31,12 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     ],
     fields: [
       { key: 'correo_institucional', label: 'Correo institucional' },
-      { key: 'password_hash', label: 'Password hash' },
+      { key: 'password', label: 'Contrasena' },
       { key: 'nombre', label: 'Nombre' },
       { key: 'carrera', label: 'Carrera' },
       { key: 'foto_url', label: 'Foto URL' },
       { key: 'telefono', label: 'Telefono' },
       { key: 'zona_barrio', label: 'Zona o barrio' },
-      { key: 'rol', label: 'Rol', kind: 'select', options: ['estudiante', 'admin'] },
-      { key: 'reputacion_promedio', label: 'Reputacion promedio', kind: 'number' },
-      { key: 'total_viajes', label: 'Total viajes', kind: 'number' },
       { key: 'estado', label: 'Estado', kind: 'select', options: ['activo', 'suspendido', 'advertido'] },
     ],
   },
@@ -60,13 +57,11 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
       'created_at',
     ],
     fields: [
-      { key: 'conductor_id', label: 'Conductor', kind: 'select', relation: 'users' },
       { key: 'origen_zona', label: 'Origen zona' },
       { key: 'destino_zona', label: 'Destino zona' },
       { key: 'fecha_hora', label: 'Fecha y hora', kind: 'datetime-local' },
       { key: 'cupos_disponibles', label: 'Cupos disponibles', kind: 'number' },
       { key: 'notas_reglas', label: 'Notas y reglas', kind: 'textarea' },
-      { key: 'estado', label: 'Estado', kind: 'select', options: ['abierto', 'completo', 'cancelado', 'finalizado'] },
     ],
   },
   requests: {
@@ -78,7 +73,6 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     fields: [
       { key: 'viaje_id', label: 'Viaje', kind: 'select', relation: 'trips' },
       { key: 'pasajero_id', label: 'Pasajero', kind: 'select', relation: 'users' },
-      { key: 'estado', label: 'Estado', kind: 'select', options: ['pendiente', 'aceptada', 'rechazada'] },
     ],
   },
   ratings: {
@@ -89,7 +83,6 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     columns: ['id', 'viaje_id', 'calificador_id', 'calificado_id', 'puntuacion', 'comentario', 'created_at'],
     fields: [
       { key: 'viaje_id', label: 'Viaje', kind: 'select', relation: 'trips' },
-      { key: 'calificador_id', label: 'Calificador', kind: 'select', relation: 'users' },
       { key: 'calificado_id', label: 'Calificado', kind: 'select', relation: 'users' },
       { key: 'puntuacion', label: 'Puntuacion', kind: 'number' },
       { key: 'comentario', label: 'Comentario', kind: 'textarea' },

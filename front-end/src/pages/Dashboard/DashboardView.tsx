@@ -1,9 +1,9 @@
 import { Badge } from '../../components/common/Badge'
 import { StatCard } from '../../components/common/StatCard'
 import { EmptyState } from '../../components/common/EmptyState'
-import type { ViewKey, EntityState } from '../../types'
+import type { EntityRow, ViewKey, EntityState } from '../../types'
 import { managedViews, statusTone } from '../../constants/entities'
-import { getUserName } from '../../utils/entityHelpers'
+import { getRelatedName } from '../../utils/entityHelpers'
 
 interface DashboardViewProps {
   data: Record<ViewKey, EntityState>
@@ -23,6 +23,12 @@ export function DashboardView({ data }: DashboardViewProps) {
   const averageRating = ratingValues.length
     ? (ratingValues.reduce((sum, rating) => sum + rating, 0) / ratingValues.length).toFixed(1)
     : '0.0'
+  const userLabel = (row: EntityRow, relationKey: string, idKey: string) => {
+    const id = row[idKey] as string | number | null | undefined
+    const user = users.find((item) => String(item.id) === String(id))
+    if (user?.nombre) return String(user.nombre)
+    return getRelatedName(row, relationKey, id)
+  }
 
   return (
     <div className="view-stack">
@@ -58,8 +64,8 @@ export function DashboardView({ data }: DashboardViewProps) {
               {trips.slice(0, 6).map((trip) => (
                 <article key={String(trip.id)} className="timeline-item">
                   <time>{String(trip.fecha_hora ?? '')}</time>
-                  <strong>{trip.origen_zona} {'->'} {trip.destino_zona}</strong>
-                  <span>{getUserName(users, trip.conductor_id)} - {trip.cupos_disponibles ?? 0} cupos</span>
+                  <strong>{String(trip.origen_zona ?? '')} {'->'} {String(trip.destino_zona ?? '')}</strong>
+                  <span>{userLabel(trip, 'conductor', 'conductor_id')} - {String(trip.cupos_disponibles ?? 0)} cupos</span>
                 </article>
               ))}
             </div>
@@ -77,7 +83,11 @@ export function DashboardView({ data }: DashboardViewProps) {
               {reports.slice(0, 6).map((report) => (
                 <article key={String(report.id)} className="compact-row">
                   <div>
-                    <strong>{getUserName(users, report.reportante_id)} reporta a {getUserName(users, report.reportado_id)}</strong>
+                    <strong>
+                      {userLabel(report, 'reportante', 'reportante_id')}
+                      {' reporta a '}
+                      {userLabel(report, 'reportado', 'reportado_id')}
+                    </strong>
                     <span>{String(report.motivo ?? '')}</span>
                   </div>
                   <Badge tone={statusTone[String(report.estado)]}>{String(report.estado ?? '')}</Badge>

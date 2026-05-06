@@ -89,6 +89,12 @@
   font-weight: 700;
 }
 
+.muted-text {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .app-shell {
   min-height: 100vh;
   display: grid;
@@ -393,6 +399,12 @@ h2 {
   align-items: center;
 }
 
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
 .rating-row {
   grid-template-columns: 58px minmax(0, 1fr);
 }
@@ -549,6 +561,19 @@ h2 {
 .table-wrap {
   width: 100%;
   overflow-x: auto;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 190px;
+}
+
+.row-actions button {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
 }
 
 table {

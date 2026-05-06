@@ -1,9 +1,23 @@
 import type { EntityRow } from '../types'
 
 export async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const headers = new Headers(options?.headers)
+  const storedSession = localStorage.getItem('uride-session')
+
+  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+
+  if (storedSession && !headers.has('Authorization')) {
+    try {
+      const session = JSON.parse(storedSession) as { access_token?: string }
+      if (session.access_token) headers.set('Authorization', `Bearer ${session.access_token}`)
+    } catch {
+      localStorage.removeItem('uride-session')
+    }
+  }
+
   const response = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers,
   })
 
   const text = await response.text()
@@ -45,6 +59,7 @@ export function normalizeBackendRow(row: EntityRow): EntityRow {
     usuario_id: row.usuario_id ?? row.usuarioId,
     fecha_solicitud: row.fecha_solicitud ?? row.fechaSolicitud,
     fecha_hora: row.fecha_hora ?? row.fechaHora,
+    motivo_cancelacion: row.motivo_cancelacion ?? row.motivoCancelacion,
   }
 }
 

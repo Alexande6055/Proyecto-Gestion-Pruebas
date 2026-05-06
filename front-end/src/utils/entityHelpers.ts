@@ -5,6 +5,17 @@ export function getUserName(users: EntityRow[], id: string | number | null | und
   return user?.nombre ? String(user.nombre) : String(id ?? '')
 }
 
+export function getRelatedName(row: EntityRow, relationKey: string, fallbackId: string | number | null | undefined) {
+  const relation = row[relationKey]
+
+  if (relation && typeof relation === 'object' && !Array.isArray(relation)) {
+    const relatedRow = relation as EntityRow
+    return String(relatedRow.nombre ?? relatedRow.correo_institucional ?? fallbackId ?? '')
+  }
+
+  return String(fallbackId ?? '')
+}
+
 export function getTripRoute(trips: EntityRow[], id: string | number | null | undefined) {
   const trip = trips.find((item) => String(item.id) === String(id))
   if (!trip) return String(id ?? '')

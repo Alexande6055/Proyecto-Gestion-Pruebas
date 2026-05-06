@@ -58,20 +58,43 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
           correo_institucional: formData.correo_institucional,
           password: '',
         })
-      } else {
-        await requestJson<{ message: string }>('/api/auth/recover-password', {
-          method: 'PATCH',
+      } else if (mode === 'recover') {
+        const response = await requestJson<{ message: string; devResetToken?: string }>('/api/auth/forgot-password', {
+          method: 'POST',
           body: JSON.stringify({
             correo_institucional: formData.correo_institucional,
+          }),
+        })
+        setMessage(response.devResetToken
+          ? `${response.message} Token de desarrollo: ${response.devResetToken}`
+          : response.message)
+        setMode('reset')
+        setFormData({
+          correo_institucional: formData.correo_institucional,
+          token: response.devResetToken ?? '',
+          newPassword: '',
+          confirmPassword: '',
+        })
+      } else {
+        if (formData.newPassword !== formData.confirmPassword) {
+          throw new Error('Las contrasenas no coinciden')
+        }
+
+        await requestJson<{ message: string }>('/api/auth/reset-password', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            token: formData.token,
             newPassword: formData.newPassword,
           }),
         })
-        setMessage('Contrasena actualizada. Ya puedes iniciar sesion.')
+        setMessage('Contrasena restablecida. Ya puedes iniciar sesion.')
         setMode('login')
         setFormData({
           correo_institucional: formData.correo_institucional,
           password: '',
           newPassword: '',
+          confirmPassword: '',
+          token: '',
         })
       }
     } catch (submitError) {
@@ -125,27 +148,31 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div>
-            <h2>{mode === 'login' ? 'Iniciar sesion' : mode === 'register' ? 'Crear cuenta' : 'Recuperar contrasena'}</h2>
+            <h2>{mode === 'login' ? 'Iniciar sesion' : mode === 'register' ? 'Crear cuenta' : mode === 'recover' ? 'Recuperar contrasena' : 'Restablecer contrasena'}</h2>
             <p>
               {mode === 'login'
                 ? 'Usa tu correo institucional registrado.'
                 : mode === 'register'
                   ? 'Registra tu perfil basico de estudiante.'
-                  : 'Actualiza la contrasena asociada a tu correo institucional.'}
+                  : mode === 'recover'
+                    ? 'Solicita un token temporal para restablecer el acceso.'
+                    : 'Ingresa el token temporal y define una nueva contrasena.'}
             </p>
           </div>
 
-          <label className="field">
-            <span>Correo institucional</span>
-            <input
-              type="email"
-              required
-              value={formData.correo_institucional ?? ''}
-              onChange={(event) => updateField('correo_institucional', event.target.value)}
-            />
-          </label>
+          {mode !== 'reset' && (
+            <label className="field">
+              <span>Correo institucional</span>
+              <input
+                type="email"
+                required
+                value={formData.correo_institucional ?? ''}
+                onChange={(event) => updateField('correo_institucional', event.target.value)}
+              />
+            </label>
+          )}
 
-          {mode !== 'recover' && (
+          {mode !== 'recover' && mode !== 'reset' && (
             <label className="field">
               <span>Contrasena</span>
               <input
@@ -158,17 +185,37 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
             </label>
           )}
 
-          {mode === 'recover' && (
-            <label className="field">
-              <span>Nueva contrasena</span>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={formData.newPassword ?? ''}
-                onChange={(event) => updateField('newPassword', event.target.value)}
-              />
-            </label>
+          {mode === 'reset' && (
+            <>
+              <label className="field">
+                <span>Token temporal</span>
+                <input
+                  required
+                  value={formData.token ?? ''}
+                  onChange={(event) => updateField('token', event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span>Nueva contrasena</span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={formData.newPassword ?? ''}
+                  onChange={(event) => updateField('newPassword', event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span>Confirmar contrasena</span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={formData.confirmPassword ?? ''}
+                  onChange={(event) => updateField('confirmPassword', event.target.value)}
+                />
+              </label>
+            </>
           )}
 
           {mode === 'register' && (
@@ -210,14 +257,22 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
           {message && <p className="form-success">{message}</p>}
           {error && <p className="form-error">{error}</p>}
           <button type="submit" disabled={loading}>
-            {loading ? 'Procesando...' : mode === 'login' ? 'Entrar' : mode === 'register' ? 'Crear cuenta' : 'Actualizar contrasena'}
+            {loading
+              ? 'Procesando...'
+              : mode === 'login'
+                ? 'Entrar'
+                : mode === 'register'
+                  ? 'Crear cuenta'
+                  : mode === 'recover'
+                    ? 'Solicitar token'
+                    : 'Restablecer contrasena'}
           </button>
           {mode === 'login' && (
             <button type="button" className="secondary" onClick={() => switchMode('recover')}>
               Recuperar contrasena
             </button>
           )}
-          {mode === 'recover' && (
+          {(mode === 'recover' || mode === 'reset') && (
             <button type="button" className="secondary" onClick={() => switchMode('login')}>
               Volver a iniciar sesion
             </button>

@@ -1,23 +1,27 @@
 import { useState, useMemo, type FormEvent, type ReactNode } from 'react'
 import { Badge } from '../../components/common/Badge'
 import { EmptyState } from '../../components/common/EmptyState'
-import type { ViewKey, EntityState, EntityConfig, EntityRow, FieldConfig } from '../../types'
-import { requestJson } from '../../services/api'
+import type { AuthSession, ViewKey, EntityState, EntityConfig, EntityRow, FieldConfig } from '../../types'
+import { normalizeBackendRow, requestJson } from '../../services/api'
 import { statusTone } from '../../constants/entities'
-import { getRelationLabel } from '../../utils/entityHelpers'
+import { getRelatedName, getRelationLabel } from '../../utils/entityHelpers'
 
 interface EntityViewProps {
   config: EntityConfig
   state: EntityState
   data: Record<ViewKey, EntityState>
   search: string
+  session: AuthSession
   onCreated: () => void
 }
 
-export function EntityView({ config, state, data, search, onCreated }: EntityViewProps) {
+export function EntityView({ config, state, data, search, session, onCreated }: EntityViewProps) {
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [editingUserId, setEditingUserId] = useState('')
+  const [actionMessage, setActionMessage] = useState('')
+  const [detailRow, setDetailRow] = useState<EntityRow | null>(null)
 
   const filteredRows = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -31,13 +35,16 @@ export function EntityView({ config, state, data, search, onCreated }: EntityVie
     event.preventDefault()
     setSaving(true)
     setSaveError('')
+    setActionMessage('')
 
     try {
-      await requestJson(config.endpoint, {
-        method: 'POST',
-        body: JSON.stringify(formData),
+      const editingUser = config.key === 'users' && Boolean(editingUserId)
+      await requestJson(editingUser ? `/api/users/${editingUserId}` : config.createEndpoint ?? config.endpoint, {
+        method: editingUser ? 'PATCH' : 'POST',
+        body: JSON.stringify(buildPayload(config.key, formData, editingUser)),
       })
       setFormData({})
+      setEditingUserId('')
       onCreated()
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'No se pudo guardar')
@@ -45,6 +52,97 @@ export function EntityView({ config, state, data, search, onCreated }: EntityVie
       setSaving(false)
     }
   }
+
+  const handleEditUser = (row: EntityRow) => {
+    setEditingUserId(String(row.id ?? ''))
+    setDetailRow(null)
+    setActionMessage('')
+    setSaveError('')
+    setFormData({
+      correo_institucional: String(row.correo_institucional ?? ''),
+      password: '',
+      nombre: String(row.nombre ?? ''),
+      carrera: String(row.carrera ?? ''),
+      foto_url: String(row.foto_url ?? ''),
+      telefono: String(row.telefono ?? ''),
+      zona_barrio: String(row.zona_barrio ?? ''),
+      estado: String(row.estado ?? ''),
+    })
+  }
+
+  const handleResetPassword = async (row: EntityRow) => {
+    const newPassword = window.prompt(`Nueva contrasena para ${row.nombre ?? row.correo_institucional ?? 'usuario'}`)
+    if (!newPassword) return
+
+    setActionMessage('')
+    setSaveError('')
+
+    try {
+      await requestJson(`/api/users/${row.id}/reset-password`, {
+        method: 'PATCH',
+        body: JSON.stringify({ newPassword }),
+      })
+      setActionMessage('Contrasena actualizada correctamente.')
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'No se pudo actualizar la contrasena')
+    }
+  }
+
+  const handleViewTrip = async (row: EntityRow) => {
+    setActionMessage('')
+    setSaveError('')
+
+    try {
+      const detail = await requestJson<EntityRow>(`/api/trips/${row.id}`)
+      setDetailRow(normalizeBackendRow(detail))
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'No se pudo consultar el viaje')
+    }
+  }
+
+  const handleCompleteTrip = async (row: EntityRow) => {
+    if (!window.confirm('Finalizar este viaje?')) return
+
+    setActionMessage('')
+    setSaveError('')
+
+    try {
+      await requestJson(`/api/trips/${row.id}/complete`, { method: 'POST' })
+      setActionMessage('Viaje finalizado correctamente.')
+      onCreated()
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'No se pudo finalizar el viaje')
+    }
+  }
+
+  const handleRequestStatus = async (row: EntityRow, estado: 'aceptada' | 'rechazada') => {
+    setActionMessage('')
+    setSaveError('')
+
+    const trip = data.trips.rows.find((item) => String(item.id) === String(row.viaje_id))
+
+    try {
+      await requestJson(`/api/requests/${row.id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          conductor_id: trip?.conductor_id ?? session.user.id,
+          estado,
+        }),
+      })
+      setActionMessage(`Solicitud ${estado}.`)
+      onCreated()
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'No se pudo actualizar la solicitud')
+    }
+  }
+
+  const cancelEdit = () => {
+    setEditingUserId('')
+    setFormData({})
+    setSaveError('')
+  }
+
+  const formTitle = editingUserId ? 'Editar usuario' : 'Formulario'
 
   return (
     <div className="view-stack">
@@ -62,8 +160,8 @@ export function EntityView({ config, state, data, search, onCreated }: EntityVie
       <section className="entity-layout">
         <form className="panel form-panel" onSubmit={handleSubmit}>
           <div className="panel-title">
-            <h2>Formulario</h2>
-            <Badge tone="neutral">{config.key}</Badge>
+            <h2>{formTitle}</h2>
+            <Badge tone="neutral">{editingUserId ? 'edicion' : config.key}</Badge>
           </div>
           <div className="form-grid">
             {config.fields.map((field) => (
@@ -76,8 +174,14 @@ export function EntityView({ config, state, data, search, onCreated }: EntityVie
               />
             ))}
           </div>
+          {actionMessage && <p className="form-success">{actionMessage}</p>}
           {saveError && <p className="form-error">{saveError}</p>}
-          <button type="submit" disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
+          <button type="submit" disabled={saving}>{saving ? 'Guardando...' : editingUserId ? 'Actualizar' : 'Guardar'}</button>
+          {editingUserId && (
+            <button type="button" className="secondary" onClick={cancelEdit}>
+              Cancelar edicion
+            </button>
+          )}
         </form>
 
         <div className="panel content-panel">
@@ -91,10 +195,39 @@ export function EntityView({ config, state, data, search, onCreated }: EntityVie
             <EmptyState title="Sin registros" message="El backend respondio correctamente, pero no envio datos para esta entidad." />
           )}
           {!state.loading && !state.error && Boolean(filteredRows.length) && (
-            <Table columns={config.columns} rows={filteredRows} config={config} data={data} />
+            <Table
+              columns={config.columns}
+              rows={filteredRows}
+              config={config}
+              data={data}
+              onEditUser={handleEditUser}
+              onResetPassword={handleResetPassword}
+              onViewTrip={handleViewTrip}
+              onCompleteTrip={handleCompleteTrip}
+              onRequestStatus={handleRequestStatus}
+            />
           )}
         </div>
       </section>
+
+      {detailRow && (
+        <section className="panel detail-panel">
+          <div className="panel-title">
+            <h2>Detalle de viaje</h2>
+            <button type="button" className="secondary" onClick={() => setDetailRow(null)}>
+              Cerrar
+            </button>
+          </div>
+          <div className="detail-grid">
+            {Object.entries(detailRow).map(([key, value]) => (
+              <div key={key} className="compact-row">
+                <strong>{key}</strong>
+                <span>{formatCellText(value)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }
@@ -113,7 +246,7 @@ function Field({
   const relationRows = field.relation ? data[field.relation].rows : []
   const options = field.relation ? relationRows.map((row) => ({
     value: String(row.id ?? ''),
-    label: getRelationLabel(field.relation, relationRows, row.id),
+    label: getRelationLabel(field.relation, relationRows, row.id as string | number | null | undefined),
   })) : field.options?.map((option) => ({ value: option, label: option })) ?? []
 
   return (
@@ -144,12 +277,24 @@ function Table({
   rows,
   config,
   data,
+  onEditUser,
+  onResetPassword,
+  onViewTrip,
+  onCompleteTrip,
+  onRequestStatus,
 }: {
   columns: string[]
   rows: EntityRow[]
   config: EntityConfig
   data: Record<ViewKey, EntityState>
+  onEditUser: (row: EntityRow) => void
+  onResetPassword: (row: EntityRow) => void
+  onViewTrip: (row: EntityRow) => void
+  onCompleteTrip: (row: EntityRow) => void
+  onRequestStatus: (row: EntityRow, estado: 'aceptada' | 'rechazada') => void
 }) {
+  const showActions = ['users', 'trips', 'requests'].includes(config.key)
+
   return (
     <div className="table-wrap">
       <table>
@@ -158,6 +303,7 @@ function Table({
             {columns.map((column) => (
               <th key={column}>{column}</th>
             ))}
+            {showActions && <th>acciones</th>}
           </tr>
         </thead>
         <tbody>
@@ -165,8 +311,21 @@ function Table({
             <tr key={String(row.id ?? JSON.stringify(row))}>
               {columns.map((column) => {
                 const field = config.fields.find((item) => item.key === column)
-                return <td key={column}>{renderCell(row[column], field, data)}</td>
+                return <td key={column}>{renderCell(row, column, field, data)}</td>
               })}
+              {showActions && (
+                <td>
+                  <RowActions
+                    config={config}
+                    row={row}
+                    onEditUser={onEditUser}
+                    onResetPassword={onResetPassword}
+                    onViewTrip={onViewTrip}
+                    onCompleteTrip={onCompleteTrip}
+                    onRequestStatus={onRequestStatus}
+                  />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -175,11 +334,65 @@ function Table({
   )
 }
 
-function renderCell(value: EntityRow[string], field: FieldConfig | undefined, data: Record<ViewKey, EntityState>): ReactNode {
+function RowActions({
+  config,
+  row,
+  onEditUser,
+  onResetPassword,
+  onViewTrip,
+  onCompleteTrip,
+  onRequestStatus,
+}: {
+  config: EntityConfig
+  row: EntityRow
+  onEditUser: (row: EntityRow) => void
+  onResetPassword: (row: EntityRow) => void
+  onViewTrip: (row: EntityRow) => void
+  onCompleteTrip: (row: EntityRow) => void
+  onRequestStatus: (row: EntityRow, estado: 'aceptada' | 'rechazada') => void
+}) {
+  if (config.key === 'users') {
+    return (
+      <div className="row-actions">
+        <button type="button" className="secondary" onClick={() => onEditUser(row)}>Editar</button>
+        <button type="button" className="secondary" onClick={() => onResetPassword(row)}>Clave</button>
+      </div>
+    )
+  }
+
+  if (config.key === 'trips') {
+    const canComplete = ['abierto', 'completo'].includes(String(row.estado))
+
+    return (
+      <div className="row-actions">
+        <button type="button" className="secondary" onClick={() => onViewTrip(row)}>Detalle</button>
+        {canComplete && <button type="button" className="secondary" onClick={() => onCompleteTrip(row)}>Finalizar</button>}
+      </div>
+    )
+  }
+
+  if (config.key === 'requests' && row.estado === 'pendiente') {
+    return (
+      <div className="row-actions">
+        <button type="button" className="secondary" onClick={() => onRequestStatus(row, 'aceptada')}>Aceptar</button>
+        <button type="button" className="secondary" onClick={() => onRequestStatus(row, 'rechazada')}>Rechazar</button>
+      </div>
+    )
+  }
+
+  return <span className="muted-text">Sin acciones</span>
+}
+
+function renderCell(row: EntityRow, column: string, field: FieldConfig | undefined, data: Record<ViewKey, EntityState>): ReactNode {
+  const value = row[column]
   const text = String(value ?? '')
 
   if (field?.relation) {
-    return getRelationLabel(field.relation, data[field.relation].rows, value)
+    const relationKey = column.endsWith('_id') ? column.replace('_id', '') : ''
+    const relatedName = relationKey ? getRelatedName(row, relationKey, value as string | number | null | undefined) : ''
+    if (relatedName && relatedName !== text) return relatedName
+
+    return getRelationLabel(field.relation, data[field.relation].rows, value as string | number | null | undefined)
   }
 
   if (field?.key === 'estado' || field?.key === 'rol') {
@@ -191,4 +404,44 @@ function renderCell(value: EntityRow[string], field: FieldConfig | undefined, da
   }
 
   return text
+}
+
+function buildPayload(key: ViewKey, formData: Record<string, string>, editingUser: boolean) {
+  const payload = Object.fromEntries(
+    Object.entries(formData)
+      .map(([fieldKey, value]) => [fieldKey, value.trim()])
+      .filter(([, value]) => value),
+  ) as Record<string, string | number>
+
+  if (key === 'users') {
+    if (editingUser) {
+      delete payload.correo_institucional
+      delete payload.password
+      return payload
+    }
+
+    delete payload.estado
+    return payload
+  }
+
+  if (key === 'trips') {
+    if (payload.cupos_disponibles) payload.cupos_disponibles = Number(payload.cupos_disponibles)
+    return payload
+  }
+
+  if (key === 'ratings') {
+    return {
+      viajeId: payload.viaje_id,
+      calificadoId: payload.calificado_id,
+      puntuacion: Number(payload.puntuacion),
+      comentario: payload.comentario,
+    }
+  }
+
+  return payload
+}
+
+function formatCellText(value: EntityRow[string]) {
+  if (value && typeof value === 'object') return JSON.stringify(value)
+  return String(value ?? '')
 }

@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, Matches } from 'class-validator';
 
-export class RecoverPasswordDto {
+export class ForgotPasswordDto {
   @ApiProperty({
     example: 'usuario@uta.edu.ec',
     description: 'Correo institucional asociado a la cuenta',
