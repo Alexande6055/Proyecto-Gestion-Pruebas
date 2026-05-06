@@ -14,6 +14,8 @@ import { UsersModule } from './modules/users/users.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { RequestsModule } from './modules/requests/requests.module';
 import { RatingsModule } from './modules/ratings/ratings.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { RatingsModule } from './modules/ratings/ratings.module';
     TripsModule,
     RequestsModule,
     RatingsModule,
+    ReportsModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService],

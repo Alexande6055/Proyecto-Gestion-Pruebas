@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { RatingsService } from './ratings.service';
@@ -8,6 +8,13 @@ import { CreateRatingDto } from './dtos/create-rating.dto';
 @Controller('ratings')
 export class RatingsController {
   constructor(private readonly ratingsService: RatingsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Listar calificaciones' })
+  @ApiResponse({ status: 200, description: 'Calificaciones encontradas' })
+  findAll() {
+    return this.ratingsService.findAll();
+  }
 
   @Post()
   @UseGuards(AuthGuard('jwt'))

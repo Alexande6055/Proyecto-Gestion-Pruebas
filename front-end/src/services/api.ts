@@ -6,11 +6,30 @@ export async function requestJson<T>(url: string, options?: RequestInit): Promis
     ...options,
   })
 
+  const text = await response.text()
+
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
+    let detail = `HTTP ${response.status}`
+
+    if (text) {
+      try {
+        const payload = JSON.parse(text) as { message?: string | string[]; error?: string }
+        const message = Array.isArray(payload.message) ? payload.message.join(', ') : payload.message
+        detail = message || payload.error || detail
+      } catch {
+        detail = text
+      }
+    }
+
+    throw new Error(detail)
   }
 
-  return response.json() as Promise<T>
+  const contentType = response.headers.get('content-type') ?? ''
+
+  if (!text) return undefined as T
+  if (contentType.includes('application/json')) return JSON.parse(text) as T
+
+  return text as T
 }
 
 export function normalizeBackendRow(row: EntityRow): EntityRow {

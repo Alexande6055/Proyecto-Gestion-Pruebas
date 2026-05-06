@@ -20,6 +20,13 @@ export class RatingsService {
     private requestsRepository: Repository<Request>,
   ) {}
 
+  async findAll(): Promise<Rating[]> {
+    return this.ratingsRepository.find({
+      relations: ['viaje', 'calificador', 'calificado'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
   async create(createRatingDto: CreateRatingDto, calificadorId: string): Promise<Rating> {
     const { viajeId, calificadoId, puntuacion } = createRatingDto;
 

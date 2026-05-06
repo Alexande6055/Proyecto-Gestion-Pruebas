@@ -26,7 +26,7 @@ export type EntityState = {
   error: string
 }
 
-export type AuthMode = 'login' | 'register'
+export type AuthMode = 'login' | 'register' | 'recover'
 
 export type AuthSession = {
   access_token: string
