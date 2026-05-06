@@ -27,9 +27,15 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
     setError('')
 
     try {
+      const payload = Object.fromEntries(
+        Object.entries(formData)
+          .map(([key, value]) => [key, value.trim()])
+          .filter(([, value]) => value),
+      )
+
       const updatedUser = await requestJson<any>(`/api/users/${session.user.id}`, {
         method: 'PATCH',
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       const newSession: AuthSession = {

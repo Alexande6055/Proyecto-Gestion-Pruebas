@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
@@ -16,12 +20,21 @@ export class UsersService {
   async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { correo_institucional: email },
-      select: ['id', 'correo_institucional', 'password_hash', 'nombre', 'rol', 'estado'],
+      select: [
+        'id',
+        'correo_institucional',
+        'password_hash',
+        'nombre',
+        'rol',
+        'estado',
+      ],
     });
   }
 
   async create(registerDto: RegisterDto): Promise<User> {
-    const existingUser = await this.findByEmail(registerDto.correo_institucional);
+    const existingUser = await this.findByEmail(
+      registerDto.correo_institucional,
+    );
     if (existingUser) {
       throw new ConflictException('El correo institucional ya está registrado');
     }
@@ -39,6 +52,10 @@ export class UsersService {
 
   async findById(id: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { id } });
+  }
+
+  async findAll(): Promise<User[]> {
+    return this.usersRepository.find();
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
@@ -61,5 +78,16 @@ export class UsersService {
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
     await this.usersRepository.update(id, { password_hash: hashedPassword });
+  }
+  async updatePasswordByEmail(
+    email: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    return this.updatePassword(user.id, newPassword);
   }
 }

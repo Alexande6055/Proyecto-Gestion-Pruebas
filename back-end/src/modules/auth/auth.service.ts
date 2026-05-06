@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/services/users.service';
 import { LoginDto } from './dtos/login.dto';
 import { RegisterDto } from './dtos/register.dto';
+import { RecoverPasswordDto } from './dtos/recover-password.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -21,7 +22,9 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.usersService.findByEmail(loginDto.correo_institucional);
+    const user = await this.usersService.findByEmail(
+      loginDto.correo_institucional,
+    );
 
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
@@ -31,13 +34,20 @@ export class AuthService {
       throw new UnauthorizedException(`Cuenta de usuario está: ${user.estado}`);
     }
 
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password_hash,
+    );
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const payload = { sub: user.id, email: user.correo_institucional, role: user.rol };
+    const payload = {
+      sub: user.id,
+      email: user.correo_institucional,
+      role: user.rol,
+    };
 
     return {
       access_token: await this.jwtService.signAsync(payload),
@@ -48,5 +58,13 @@ export class AuthService {
         role: user.rol,
       },
     };
+  }
+  async recoverPassword(recoverPasswordDto: RecoverPasswordDto) {
+    await this.usersService.updatePasswordByEmail(
+      recoverPasswordDto.correo_institucional,
+      recoverPasswordDto.newPassword,
+    );
+
+    return { message: 'Contrasena actualizada exitosamente' };
   }
 }

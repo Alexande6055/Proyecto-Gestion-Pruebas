@@ -13,6 +13,13 @@ export class RequestsService {
     private tripsRepository: Repository<Trip>,
   ) {}
 
+  async findAll(): Promise<Request[]> {
+    return this.requestsRepository.find({
+      relations: ['viaje', 'pasajero'],
+      order: { fechaSolicitud: 'DESC' },
+    });
+  }
+
   async createRequest(tripId: string, passengerId: string): Promise<Request> {
     const trip = await this.tripsRepository.findOne({ where: { id: tripId } });
 

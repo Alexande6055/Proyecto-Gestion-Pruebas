@@ -17,6 +17,12 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
     setFormData((current) => ({ ...current, [key]: value }))
   }
 
+  const switchMode = (nextMode: AuthMode) => {
+    setMode(nextMode)
+    setMessage('')
+    setError('')
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLoading(true)
@@ -34,7 +40,7 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
         })
         localStorage.setItem('uride-session', JSON.stringify(session))
         onAuthenticated(session)
-      } else {
+      } else if (mode === 'register') {
         await requestJson<{ message: string }>('/api/auth/register', {
           method: 'POST',
           body: JSON.stringify({
@@ -51,6 +57,21 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
         setFormData({
           correo_institucional: formData.correo_institucional,
           password: '',
+        })
+      } else {
+        await requestJson<{ message: string }>('/api/auth/recover-password', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            correo_institucional: formData.correo_institucional,
+            newPassword: formData.newPassword,
+          }),
+        })
+        setMessage('Contrasena actualizada. Ya puedes iniciar sesion.')
+        setMode('login')
+        setFormData({
+          correo_institucional: formData.correo_institucional,
+          password: '',
+          newPassword: '',
         })
       }
     } catch (submitError) {
@@ -89,14 +110,14 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
           <button
             type="button"
             className={mode === 'login' ? 'active' : ''}
-            onClick={() => setMode('login')}
+            onClick={() => switchMode('login')}
           >
             Ingresar
           </button>
           <button
             type="button"
             className={mode === 'register' ? 'active' : ''}
-            onClick={() => setMode('register')}
+            onClick={() => switchMode('register')}
           >
             Registro
           </button>
@@ -104,8 +125,14 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div>
-            <h2>{mode === 'login' ? 'Iniciar sesion' : 'Crear cuenta'}</h2>
-            <p>{mode === 'login' ? 'Usa tu correo institucional registrado.' : 'Registra tu perfil basico de estudiante.'}</p>
+            <h2>{mode === 'login' ? 'Iniciar sesion' : mode === 'register' ? 'Crear cuenta' : 'Recuperar contrasena'}</h2>
+            <p>
+              {mode === 'login'
+                ? 'Usa tu correo institucional registrado.'
+                : mode === 'register'
+                  ? 'Registra tu perfil basico de estudiante.'
+                  : 'Actualiza la contrasena asociada a tu correo institucional.'}
+            </p>
           </div>
 
           <label className="field">
@@ -118,16 +145,31 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
             />
           </label>
 
-          <label className="field">
-            <span>Contrasena</span>
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={formData.password ?? ''}
-              onChange={(event) => updateField('password', event.target.value)}
-            />
-          </label>
+          {mode !== 'recover' && (
+            <label className="field">
+              <span>Contrasena</span>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={formData.password ?? ''}
+                onChange={(event) => updateField('password', event.target.value)}
+              />
+            </label>
+          )}
+
+          {mode === 'recover' && (
+            <label className="field">
+              <span>Nueva contrasena</span>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={formData.newPassword ?? ''}
+                onChange={(event) => updateField('newPassword', event.target.value)}
+              />
+            </label>
+          )}
 
           {mode === 'register' && (
             <>
@@ -167,7 +209,19 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
 
           {message && <p className="form-success">{message}</p>}
           {error && <p className="form-error">{error}</p>}
-          <button type="submit" disabled={loading}>{loading ? 'Procesando...' : mode === 'login' ? 'Entrar' : 'Crear cuenta'}</button>
+          <button type="submit" disabled={loading}>
+            {loading ? 'Procesando...' : mode === 'login' ? 'Entrar' : mode === 'register' ? 'Crear cuenta' : 'Actualizar contrasena'}
+          </button>
+          {mode === 'login' && (
+            <button type="button" className="secondary" onClick={() => switchMode('recover')}>
+              Recuperar contrasena
+            </button>
+          )}
+          {mode === 'recover' && (
+            <button type="button" className="secondary" onClick={() => switchMode('login')}>
+              Volver a iniciar sesion
+            </button>
+          )}
         </form>
       </section>
     </main>

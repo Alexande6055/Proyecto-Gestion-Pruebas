@@ -1,6 +1,7 @@
 import {
   Controller,
   Body,
+  Get,
   Patch,
   Param,
   HttpCode,
@@ -15,6 +16,13 @@ import { ResetPasswordDto } from '../dtos/reset-password.dto';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Listar usuarios' })
+  @ApiResponse({ status: 200, description: 'Usuarios encontrados' })
+  findAll() {
+    return this.usersService.findAll();
+  }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Editar información de un usuario' })
