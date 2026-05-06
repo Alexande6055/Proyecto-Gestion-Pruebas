@@ -19,6 +19,14 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [passwordMessage, setPasswordMessage] = useState('')
+  const [passwordError, setPasswordError] = useState('')
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault()
@@ -53,6 +61,38 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
       setError(err instanceof Error ? err.message : 'No se pudo actualizar el perfil')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePasswordSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
+    event.preventDefault()
+    setPasswordLoading(true)
+    setPasswordMessage('')
+    setPasswordError('')
+
+    try {
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        throw new Error('Las contrasenas no coinciden')
+      }
+
+      await requestJson<{ message: string }>('/api/auth/change-password', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      })
+
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      })
+      setPasswordMessage('Contrasena actualizada correctamente.')
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : 'No se pudo actualizar la contrasena')
+    } finally {
+      setPasswordLoading(false)
     }
   }
 
@@ -136,6 +176,50 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
             <Badge tone="ok">Activo</Badge>
           </div>
         </div>
+
+        <form className="panel form-panel" onSubmit={handlePasswordSubmit}>
+          <div className="panel-title">
+            <h2>Cambiar Contrasena</h2>
+          </div>
+          <div className="form-grid">
+            <label className="field">
+              <span>Contrasena actual</span>
+              <input
+                type="password"
+                required
+                value={passwordData.currentPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+              />
+            </label>
+            <label className="field">
+              <span>Nueva contrasena</span>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+              />
+            </label>
+            <label className="field">
+              <span>Confirmar contrasena</span>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+              />
+            </label>
+          </div>
+
+          {passwordMessage && <p className="form-success">{passwordMessage}</p>}
+          {passwordError && <p className="form-error">{passwordError}</p>}
+
+          <button type="submit" disabled={passwordLoading}>
+            {passwordLoading ? 'Guardando...' : 'Actualizar Contrasena'}
+          </button>
+        </form>
       </div>
     </div>
   )

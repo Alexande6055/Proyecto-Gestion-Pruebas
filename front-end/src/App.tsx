@@ -50,6 +50,14 @@ function App() {
     profile: initialEntityState,
   })
 
+  const isAdmin = session?.user.role === 'admin'
+  const visibleViews = (Object.keys(viewLabels) as ViewKey[]).filter((key) =>
+    isAdmin || !['users', 'audit_logs'].includes(key),
+  )
+  const loadableViews = managedViews.filter((key) =>
+    isAdmin || !['users', 'audit_logs'].includes(key),
+  )
+
   useEffect(() => {
     if (!session) return
 
@@ -65,7 +73,7 @@ function App() {
         setBackendStatus('offline')
         setData((current) => {
           const next = { ...current }
-          managedViews.forEach((key) => {
+          loadableViews.forEach((key) => {
             next[key] = {
               rows: [],
               loading: false,
@@ -79,8 +87,13 @@ function App() {
 
       if (cancelled) return
       setBackendStatus('online')
+      setData((current) => ({
+        ...current,
+        users: isAdmin ? current.users : { rows: [], loading: false, error: '' },
+        audit_logs: isAdmin ? current.audit_logs : { rows: [], loading: false, error: '' },
+      }))
 
-      await Promise.all(managedViews.map(async (key) => {
+      await Promise.all(loadableViews.map(async (key) => {
         const config = entityConfigs[key]
         setData((current) => ({
           ...current,
@@ -113,7 +126,13 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [refreshToken, session])
+  }, [refreshToken, session, isAdmin])
+
+  useEffect(() => {
+    if (session && !visibleViews.includes(activeView)) {
+      setActiveView('dashboard')
+    }
+  }, [activeView, session, visibleViews])
 
   const handleLogout = async () => {
     try {
@@ -140,6 +159,7 @@ function App() {
         state={data[activeView]}
         data={data}
         search={search}
+        session={session}
         onCreated={() => setRefreshToken((value) => value + 1)}
       />
     )
@@ -155,7 +175,7 @@ function App() {
           </div>
         </div>
         <nav aria-label="Vistas del sistema">
-          {(Object.keys(viewLabels) as ViewKey[]).map((key) => (
+          {visibleViews.map((key) => (
             <button
               key={key}
               type="button"

@@ -2,9 +2,10 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { RegisterDto } from '../../auth/dtos/register.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
@@ -28,6 +29,13 @@ export class UsersService {
         'rol',
         'estado',
       ],
+    });
+  }
+
+  async findByIdWithPassword(id: string): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { id },
+      select: ['id', 'password_hash'],
     });
   }
 
@@ -77,17 +85,67 @@ export class UsersService {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    await this.usersRepository.update(id, { password_hash: hashedPassword });
+    await this.usersRepository.update(id, {
+      password_hash: hashedPassword,
+      reset_password_token_hash: undefined,
+      reset_password_expires_at: undefined,
+    });
   }
-  async updatePasswordByEmail(
+
+  async storePasswordResetToken(
     email: string,
-    newPassword: string,
+    tokenHash: string,
+    expiresAt: Date,
   ): Promise<void> {
     const user = await this.findByEmail(email);
+    if (!user) {
+      return;
+    }
+
+    await this.usersRepository.update(user.id, {
+      reset_password_token_hash: tokenHash,
+      reset_password_expires_at: expiresAt,
+    });
+  }
+
+  async updatePasswordByResetToken(
+    tokenHash: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.usersRepository.findOne({
+      where: {
+        reset_password_token_hash: tokenHash,
+        reset_password_expires_at: MoreThan(new Date()),
+      },
+      select: ['id'],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Token invalido o expirado');
+    }
+
+    await this.updatePassword(user.id, newPassword);
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.findByIdWithPassword(userId);
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    return this.updatePassword(user.id, newPassword);
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password_hash,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('La contrasena actual no es correcta');
+    }
+
+    await this.updatePassword(userId, newPassword);
   }
 }

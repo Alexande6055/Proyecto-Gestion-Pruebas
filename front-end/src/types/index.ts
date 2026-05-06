@@ -1,5 +1,9 @@
 export type ViewKey = 'dashboard' | 'users' | 'trips' | 'requests' | 'ratings' | 'reports' | 'audit_logs' | 'profile'
-export type EntityRow = Record<string, string | number | null | undefined>
+export type EntityValue = string | number | boolean | null | undefined | EntityRow | EntityRow[]
+
+export interface EntityRow {
+  [key: string]: EntityValue
+}
 export type StatusTone = 'ok' | 'warning' | 'danger' | 'info' | 'neutral'
 export type FieldKind = 'text' | 'number' | 'datetime-local' | 'select' | 'textarea'
 
@@ -16,6 +20,7 @@ export type EntityConfig = {
   title: string
   subtitle: string
   endpoint: string
+  createEndpoint?: string
   columns: string[]
   fields: FieldConfig[]
 }
@@ -26,7 +31,7 @@ export type EntityState = {
   error: string
 }
 
-export type AuthMode = 'login' | 'register' | 'recover'
+export type AuthMode = 'login' | 'register' | 'recover' | 'reset'
 
 export type AuthSession = {
   access_token: string

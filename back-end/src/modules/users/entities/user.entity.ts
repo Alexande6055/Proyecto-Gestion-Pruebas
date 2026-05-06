@@ -21,32 +21,38 @@ export enum UserStatus {
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  "id": string;
+  'id': string;
 
   @Column({ unique: true })
   @IsEmail()
-  "correo_institucional": string;
+  'correo_institucional': string;
 
   @Column({ select: false }) // Hide password by default in queries
-  "password_hash": string;
+  'password_hash': string;
+
+  @Column({ nullable: true, select: false })
+  'reset_password_token_hash'?: string;
+
+  @Column({ type: 'timestamp', nullable: true, select: false })
+  'reset_password_expires_at'?: Date;
 
   @Column()
-  "nombre": string;
+  'nombre': string;
 
   @Column()
-  "carrera": string;
+  'carrera': string;
 
   @Column({ nullable: true })
   @IsOptional()
   @IsUrl()
-  "foto_url"?: string;
+  'foto_url'?: string;
 
   @Column({ nullable: true })
   @IsOptional()
-  "telefono"?: string;
+  'telefono'?: string;
 
   @Column()
-  "zona_barrio": string;
+  'zona_barrio': string;
 
   @Column({
     type: 'enum',
@@ -54,7 +60,7 @@ export class User {
     default: UserRole.ESTUDIANTE,
   })
   @IsEnum(UserRole)
-  "rol": UserRole;
+  'rol': UserRole;
 
   @Column({
     type: 'decimal',
@@ -62,10 +68,10 @@ export class User {
     scale: 1,
     default: 0.0,
   })
-  "reputacion_promedio": number;
+  'reputacion_promedio': number;
 
   @Column({ default: 0 })
-  "total_viajes": number;
+  'total_viajes': number;
 
   @Column({
     type: 'enum',
@@ -73,8 +79,8 @@ export class User {
     default: UserStatus.ACTIVO,
   })
   @IsEnum(UserStatus)
-  "estado": UserStatus;
+  'estado': UserStatus;
 
   @CreateDateColumn()
-  "created_at": Date;
+  'created_at': Date;
 }
