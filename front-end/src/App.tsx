@@ -13,7 +13,8 @@ import {
 } from './constants/entities'
 
 // Services
-import { requestJson, normalizeRows } from './services/api'
+import { requestJson, normalizeRows, authService } from './services'
+import { usersService, tripsService, requestsService, ratingsService, reportsService, entityService } from './services'
 
 // Components
 import { Badge } from './components/common/Badge'
@@ -101,7 +102,24 @@ function App() {
         }))
 
         try {
-          const payload = await requestJson<unknown>(config.endpoint)
+          let payload: unknown
+
+          // Usar el servicio específico para cada entidad
+          if (key === 'users') {
+            payload = await usersService.getAll()
+          } else if (key === 'trips') {
+            payload = await tripsService.getAll()
+          } else if (key === 'requests') {
+            payload = await requestsService.getAll()
+          } else if (key === 'ratings') {
+            payload = await ratingsService.getAll()
+          } else if (key === 'reports') {
+            payload = await reportsService.getAll()
+          } else {
+            // Para otros tipos de entidades, usar el método genérico
+            payload = await entityService.getAll(config.endpoint)
+          }
+
           if (cancelled) return
           setData((current) => ({
             ...current,
@@ -136,9 +154,9 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await requestJson('/auth/logout', { method: 'POST' })
+      await authService.logout()
     } finally {
-      localStorage.removeItem('uride-session')
+      authService.clearSession()
       setSession(null)
       setSearch('')
       setActiveView('dashboard')

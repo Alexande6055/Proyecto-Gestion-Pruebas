@@ -1,6 +1,6 @@
 import { useState, type FormEventHandler } from 'react'
 import type { AuthSession } from '../../types'
-import { requestJson } from '../../services/api'
+import { usersService, authService } from '../../services'
 import { Badge } from '../../components/common/Badge'
 
 interface ProfileViewProps {
@@ -41,20 +41,19 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
           .filter(([, value]) => value),
       )
 
-      const updatedUser = await requestJson<any>(`/users/${session.user.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(payload),
-      })
+      // Actualizar usuario con los datos del formulario
+      await usersService.update(session.user.id, payload)
 
+      // Actualizar sesión localmente con los nuevos datos del formulario
       const newSession: AuthSession = {
         ...session,
         user: {
           ...session.user,
-          nombre: updatedUser.nombre,
+          nombre: payload.nombre ?? session.user.nombre,
         },
       }
 
-      localStorage.setItem('uride-session', JSON.stringify(newSession))
+      authService.saveSession(newSession)
       onSessionUpdate(newSession)
       setMessage('Perfil actualizado correctamente.')
     } catch (err) {
@@ -75,12 +74,9 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
         throw new Error('Las contrasenas no coinciden')
       }
 
-      await requestJson<{ message: string }>('/auth/change-password', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword,
-        }),
+      await authService.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
       })
 
       setPasswordData({

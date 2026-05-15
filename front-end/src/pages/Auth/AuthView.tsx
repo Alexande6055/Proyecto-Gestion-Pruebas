@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import type { AuthMode, AuthSession } from '../../types'
-import { requestJson } from '../../services/api'
+import { authService } from '../../services'
 
 interface AuthViewProps {
   onAuthenticated: (session: AuthSession) => void
@@ -31,26 +31,20 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
 
     try {
       if (mode === 'login') {
-        const session = await requestJson<AuthSession>('/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({
-            correo_institucional: formData.correo_institucional,
-            password: formData.password,
-          }),
+        const session = await authService.login({
+          correo_institucional: formData.correo_institucional,
+          password: formData.password,
         })
-        localStorage.setItem('uride-session', JSON.stringify(session))
+        authService.saveSession(session)
         onAuthenticated(session)
       } else if (mode === 'register') {
-        await requestJson<{ message: string }>('/auth/register', {
-          method: 'POST',
-          body: JSON.stringify({
-            correo_institucional: formData.correo_institucional,
-            password: formData.password,
-            nombre: formData.nombre,
-            carrera: formData.carrera,
-            zona_barrio: formData.zona_barrio,
-            telefono: formData.telefono || undefined,
-          }),
+        await authService.register({
+          correo_institucional: formData.correo_institucional,
+          password: formData.password,
+          nombre: formData.nombre,
+          carrera: formData.carrera,
+          zona_barrio: formData.zona_barrio,
+          telefono: formData.telefono || undefined,
         })
         setMessage('Cuenta creada. Ahora puedes iniciar sesion.')
         setMode('login')
@@ -59,12 +53,7 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
           password: '',
         })
       } else if (mode === 'recover') {
-        const response = await requestJson<{ message: string; devResetToken?: string }>('/auth/forgot-password', {
-          method: 'POST',
-          body: JSON.stringify({
-            correo_institucional: formData.correo_institucional,
-          }),
-        })
+        const response = await authService.forgotPassword(formData.correo_institucional)
         setMessage(response.devResetToken
           ? `${response.message} Token de desarrollo: ${response.devResetToken}`
           : response.message)
@@ -80,12 +69,9 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
           throw new Error('Las contrasenas no coinciden')
         }
 
-        await requestJson<{ message: string }>('/auth/reset-password', {
-          method: 'PATCH',
-          body: JSON.stringify({
-            token: formData.token,
-            newPassword: formData.newPassword,
-          }),
+        await authService.resetPassword({
+          token: formData.token,
+          newPassword: formData.newPassword,
         })
         setMessage('Contrasena restablecida. Ya puedes iniciar sesion.')
         setMode('login')

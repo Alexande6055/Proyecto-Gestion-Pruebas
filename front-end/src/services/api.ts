@@ -4,7 +4,10 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '') as string
 
 function buildUrl(url: string) {
   if (/^https?:\/\//.test(url)) return url
-  if (url.startsWith('/')) return API_BASE.replace(/\/$/, '') + url
+  if (url.startsWith('/')) {
+    const base = API_BASE.replace(/\/$/, '')
+    return base ? base + url : url
+  }
   return url
 }
 

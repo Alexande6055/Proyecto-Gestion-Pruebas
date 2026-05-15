@@ -2,7 +2,8 @@ import { useState, useMemo, type FormEvent, type ReactNode } from 'react'
 import { Badge } from '../../components/common/Badge'
 import { EmptyState } from '../../components/common/EmptyState'
 import type { AuthSession, ViewKey, EntityState, EntityConfig, EntityRow, FieldConfig } from '../../types'
-import { normalizeBackendRow, requestJson } from '../../services/api'
+import { normalizeBackendRow } from '../../services'
+import { usersService, tripsService, requestsService } from '../../services'
 import { statusTone } from '../../constants/entities'
 import { getRelatedName, getRelationLabel } from '../../utils/entityHelpers'
 
@@ -38,11 +39,34 @@ export function EntityView({ config, state, data, search, session, onCreated }: 
     setActionMessage('')
 
     try {
-      const editingUser = config.key === 'users' && Boolean(editingUserId)
-      await requestJson(editingUser ? `/users/${editingUserId}` : config.createEndpoint ?? config.endpoint, {
-        method: editingUser ? 'PATCH' : 'POST',
-        body: JSON.stringify(buildPayload(config.key, formData, editingUser)),
-      })
+      const payload = buildPayload(config.key, formData, Boolean(editingUserId))
+      const isEditingUser = config.key === 'users' && Boolean(editingUserId)
+
+      if (config.key === 'users') {
+        if (isEditingUser) {
+          await usersService.update(editingUserId, payload)
+        } else {
+          await usersService.create(payload)
+        }
+      } else if (config.key === 'trips') {
+        const { tripsService: trips } = await import('../../services')
+        if (isEditingUser) {
+          // En este caso editingUserId es una variable genérica, no es específica de usuarios
+          // Por eso el lógica original no soporta edición de viajes
+        } else {
+          await trips.create(payload)
+        }
+      } else if (config.key === 'requests') {
+        const { requestsService: requests } = await import('../../services')
+        await requests.create(payload)
+      } else if (config.key === 'ratings') {
+        const { ratingsService: ratings } = await import('../../services')
+        await ratings.create(payload)
+      } else if (config.key === 'reports') {
+        const { reportsService: reports } = await import('../../services')
+        await reports.create(payload)
+      }
+
       setFormData({})
       setEditingUserId('')
       onCreated()
@@ -78,10 +102,7 @@ export function EntityView({ config, state, data, search, session, onCreated }: 
     setSaveError('')
 
     try {
-      await requestJson(`/users/${row.id}/reset-password`, {
-        method: 'PATCH',
-        body: JSON.stringify({ newPassword }),
-      })
+      await usersService.resetPassword(row.id as string | number, newPassword)
       setActionMessage('Contrasena actualizada correctamente.')
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'No se pudo actualizar la contrasena')
@@ -93,7 +114,7 @@ export function EntityView({ config, state, data, search, session, onCreated }: 
     setSaveError('')
 
     try {
-      const detail = await requestJson<EntityRow>(`/trips/${row.id}`)
+      const detail = await tripsService.getById(row.id as string | number)
       setDetailRow(normalizeBackendRow(detail))
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'No se pudo consultar el viaje')
@@ -107,7 +128,7 @@ export function EntityView({ config, state, data, search, session, onCreated }: 
     setSaveError('')
 
     try {
-      await requestJson(`/trips/${row.id}/complete`, { method: 'POST' })
+      await tripsService.complete(row.id as string | number)
       setActionMessage('Viaje finalizado correctamente.')
       onCreated()
     } catch (error) {
@@ -122,12 +143,15 @@ export function EntityView({ config, state, data, search, session, onCreated }: 
     const trip = data.trips.rows.find((item) => String(item.id) === String(row.viaje_id))
 
     try {
-      await requestJson(`/requests/${row.id}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          conductor_id: trip?.conductor_id ?? session.user.id,
-          estado,
-        }),
+      const conductorId = trip?.conductor_id ?? session.user.id
+      // Asegurar que conductor_id es un tipo válido
+      const validConductorId = typeof conductorId === 'string' || typeof conductorId === 'number' || typeof conductorId === 'boolean'
+        ? conductorId
+        : String(conductorId)
+
+      await requestsService.updateStatus(row.id as string | number, {
+        conductor_id: validConductorId,
+        estado,
       })
       setActionMessage(`Solicitud ${estado}.`)
       onCreated()
