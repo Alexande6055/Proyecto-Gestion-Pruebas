@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import './App.css'
 
 // Types
 import type { AuthSession, ViewKey, EntityState } from './types'
