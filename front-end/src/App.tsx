@@ -136,7 +136,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await requestJson('/api/auth/logout', { method: 'POST' })
+      await requestJson('/auth/logout', { method: 'POST' })
     } finally {
       localStorage.removeItem('uride-session')
       setSession(null)

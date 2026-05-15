@@ -39,7 +39,7 @@ export function EntityView({ config, state, data, search, session, onCreated }: 
 
     try {
       const editingUser = config.key === 'users' && Boolean(editingUserId)
-      await requestJson(editingUser ? `/api/users/${editingUserId}` : config.createEndpoint ?? config.endpoint, {
+      await requestJson(editingUser ? `/users/${editingUserId}` : config.createEndpoint ?? config.endpoint, {
         method: editingUser ? 'PATCH' : 'POST',
         body: JSON.stringify(buildPayload(config.key, formData, editingUser)),
       })
@@ -78,7 +78,7 @@ export function EntityView({ config, state, data, search, session, onCreated }: 
     setSaveError('')
 
     try {
-      await requestJson(`/api/users/${row.id}/reset-password`, {
+      await requestJson(`/users/${row.id}/reset-password`, {
         method: 'PATCH',
         body: JSON.stringify({ newPassword }),
       })
@@ -93,7 +93,7 @@ export function EntityView({ config, state, data, search, session, onCreated }: 
     setSaveError('')
 
     try {
-      const detail = await requestJson<EntityRow>(`/api/trips/${row.id}`)
+      const detail = await requestJson<EntityRow>(`/trips/${row.id}`)
       setDetailRow(normalizeBackendRow(detail))
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'No se pudo consultar el viaje')
@@ -107,7 +107,7 @@ export function EntityView({ config, state, data, search, session, onCreated }: 
     setSaveError('')
 
     try {
-      await requestJson(`/api/trips/${row.id}/complete`, { method: 'POST' })
+      await requestJson(`/trips/${row.id}/complete`, { method: 'POST' })
       setActionMessage('Viaje finalizado correctamente.')
       onCreated()
     } catch (error) {
@@ -122,7 +122,7 @@ export function EntityView({ config, state, data, search, session, onCreated }: 
     const trip = data.trips.rows.find((item) => String(item.id) === String(row.viaje_id))
 
     try {
-      await requestJson(`/api/requests/${row.id}/status`, {
+      await requestJson(`/requests/${row.id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({
           conductor_id: trip?.conductor_id ?? session.user.id,

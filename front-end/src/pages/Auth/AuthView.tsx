@@ -31,7 +31,7 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
 
     try {
       if (mode === 'login') {
-        const session = await requestJson<AuthSession>('/api/auth/login', {
+        const session = await requestJson<AuthSession>('/auth/login', {
           method: 'POST',
           body: JSON.stringify({
             correo_institucional: formData.correo_institucional,
@@ -41,7 +41,7 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
         localStorage.setItem('uride-session', JSON.stringify(session))
         onAuthenticated(session)
       } else if (mode === 'register') {
-        await requestJson<{ message: string }>('/api/auth/register', {
+        await requestJson<{ message: string }>('/auth/register', {
           method: 'POST',
           body: JSON.stringify({
             correo_institucional: formData.correo_institucional,
@@ -59,7 +59,7 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
           password: '',
         })
       } else if (mode === 'recover') {
-        const response = await requestJson<{ message: string; devResetToken?: string }>('/api/auth/forgot-password', {
+        const response = await requestJson<{ message: string; devResetToken?: string }>('/auth/forgot-password', {
           method: 'POST',
           body: JSON.stringify({
             correo_institucional: formData.correo_institucional,
@@ -80,7 +80,7 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
           throw new Error('Las contrasenas no coinciden')
         }
 
-        await requestJson<{ message: string }>('/api/auth/reset-password', {
+        await requestJson<{ message: string }>('/auth/reset-password', {
           method: 'PATCH',
           body: JSON.stringify({
             token: formData.token,

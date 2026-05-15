@@ -41,7 +41,7 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
           .filter(([, value]) => value),
       )
 
-      const updatedUser = await requestJson<any>(`/api/users/${session.user.id}`, {
+      const updatedUser = await requestJson<any>(`/users/${session.user.id}`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
       })
@@ -75,7 +75,7 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
         throw new Error('Las contrasenas no coinciden')
       }
 
-      await requestJson<{ message: string }>('/api/auth/change-password', {
+      await requestJson<{ message: string }>('/auth/change-password', {
         method: 'PATCH',
         body: JSON.stringify({
           currentPassword: passwordData.currentPassword,
