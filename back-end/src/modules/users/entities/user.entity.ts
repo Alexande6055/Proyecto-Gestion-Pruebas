@@ -14,6 +14,7 @@ export enum UserRole {
 
 export enum UserStatus {
   ACTIVO = 'activo',
+  PENDIENTE = 'pendiente',
   SUSPENDIDO = 'suspendido',
   ADVERTIDO = 'advertido',
 }
@@ -35,6 +36,9 @@ export class User {
 
   @Column({ type: 'timestamp', nullable: true, select: false })
   'reset_password_expires_at'?: Date;
+
+  @Column({ unique: true, nullable: true, select: false })
+  'activation_code'?: string;
 
   @Column()
   'nombre': string;

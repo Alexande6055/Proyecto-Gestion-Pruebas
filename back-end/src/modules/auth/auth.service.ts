@@ -1,4 +1,5 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, InternalServerErrorException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/services/users.service';
 import { LoginDto } from './dtos/login.dto';
@@ -15,14 +16,30 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async register(registerDto: RegisterDto) {
     const user = await this.usersService.create(registerDto);
+    const appBaseUrl = this.configService.get<string>('APP_BASE_URL') ?? 'http://localhost:3000';
+    const emailApiUrl = this.configService.get<string>('EMAIL_API_URL');
+    const emailApiToken = this.configService.get<string>('EMAIL_API_TOKEN');
+    const verificationLink = `${appBaseUrl.replace(/\/$/, '')}/auth/activate/${user.activation_code}`;
+
+    await this.sendActivationEmail(user.correo_institucional, user.nombre, verificationLink);
+
     return {
       message: 'Usuario registrado exitosamente',
       userId: user.id,
+      ...(process.env.NODE_ENV === 'production'
+        ? {}
+        : { activationCode: user.activation_code, verificationLink }),
     };
+  }
+
+  async activateAccount(code: string) {
+    await this.usersService.activateByCode(code);
+    return { message: 'Cuenta activada correctamente' };
   }
 
   async login(loginDto: LoginDto) {

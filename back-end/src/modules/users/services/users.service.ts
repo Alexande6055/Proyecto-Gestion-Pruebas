@@ -6,7 +6,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThan, Repository } from 'typeorm';
-import { User } from '../entities/user.entity';
+import { randomBytes } from 'crypto';
+import { User, UserStatus } from '../entities/user.entity';
 import { RegisterDto } from '../../auth/dtos/register.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -50,9 +51,12 @@ export class UsersService {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(registerDto.password, salt);
 
+    const activationCode = randomBytes(16).toString('hex');
     const user = this.usersRepository.create({
       ...registerDto,
       password_hash: hashedPassword,
+      activation_code: activationCode,
+      estado: UserStatus.PENDIENTE,
     });
 
     return this.usersRepository.save(user);
@@ -73,6 +77,24 @@ export class UsersService {
     }
 
     Object.assign(user, updateUserDto);
+    return this.usersRepository.save(user);
+  }
+
+  async findByActivationCode(code: string): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { activation_code: code },
+      select: ['id', 'estado', 'activation_code'],
+    });
+  }
+
+  async activateByCode(code: string): Promise<User> {
+    const user = await this.findByActivationCode(code);
+    if (!user) {
+      throw new NotFoundException('Codigo de activacion invalido');
+    }
+
+    user.estado = UserStatus.ACTIVO;
+    user.activation_code = undefined;
     return this.usersRepository.save(user);
   }
 

@@ -3,11 +3,15 @@ import {
   Controller,
   Patch,
   Post,
+  Get,
+  Param,
+  Res,
   HttpCode,
   HttpStatus,
   Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -88,5 +92,28 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Solicitud procesada' })
   recoverPassword(@Body() recoverPasswordDto: RecoverPasswordDto) {
     return this.authService.recoverPassword(recoverPasswordDto);
+  }
+
+  @Get('activate/:code')
+  @ApiOperation({ summary: 'Activar cuenta por codigo' })
+  @ApiResponse({ status: 200, description: 'Cuenta activada exitosamente' })
+  @ApiResponse({ status: 404, description: 'Codigo de activacion invalido' })
+  async activate(@Param('code') code: string, @Res() res: Response) {
+    try {
+      await this.authService.activateAccount(code);
+      return res
+        .status(HttpStatus.OK)
+        .type('text/html')
+        .send(
+          '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Cuenta activada</title></head><body><h1>Cuenta activada</h1><p>Tu cuenta se ha activado correctamente.</p></body></html>',
+        );
+    } catch {
+      return res
+        .status(HttpStatus.NOT_FOUND)
+        .type('text/html')
+        .send(
+          '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Activacion fallida</title></head><body><h1>Activacion fallida</h1><p>El codigo de activacion es invalido o ya fue utilizado.</p></body></html>',
+        );
+    }
   }
 }
