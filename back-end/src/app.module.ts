@@ -25,16 +25,22 @@ import { AuditModule } from './modules/audit/audit.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_NAME'),
-        entities: [User, Trip, Request, Rating, Report, AuditLog],
-        synchronize: configService.get<boolean>('DB_SYNCHRONIZE'),
-      }),
+      useFactory: (configService: ConfigService) => {
+        const enableSsl = (configService.get<string>('DB_SSL') || 'false') === 'true';
+        const extra = enableSsl ? { ssl: { rejectUnauthorized: false } } : undefined;
+
+        return {
+          type: 'postgres',
+          host: configService.get<string>('DB_HOST'),
+          port: configService.get<number>('DB_PORT'),
+          username: configService.get<string>('DB_USERNAME'),
+          password: configService.get<string>('DB_PASSWORD'),
+          database: configService.get<string>('DB_NAME'),
+          entities: [User, Trip, Request, Rating, Report, AuditLog],
+          synchronize: configService.get<boolean>('DB_SYNCHRONIZE'),
+          ...(extra ? { extra } : {}),
+        } as any;
+      },
     }),
     AuthModule,
     UsersModule,
