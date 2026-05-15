@@ -1,5 +1,13 @@
 import type { EntityRow } from '../types'
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '') as string
+
+function buildUrl(url: string) {
+  if (/^https?:\/\//.test(url)) return url
+  if (url.startsWith('/')) return API_BASE.replace(/\/$/, '') + url
+  return url
+}
+
 export async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
   const headers = new Headers(options?.headers)
   const storedSession = localStorage.getItem('uride-session')
@@ -15,7 +23,7 @@ export async function requestJson<T>(url: string, options?: RequestInit): Promis
     }
   }
 
-  const response = await fetch(url, {
+  const response = await fetch(buildUrl(url), {
     ...options,
     headers,
   })
