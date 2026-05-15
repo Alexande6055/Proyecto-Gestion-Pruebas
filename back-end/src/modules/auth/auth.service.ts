@@ -42,6 +42,39 @@ export class AuthService {
     return { message: 'Cuenta activada correctamente' };
   }
 
+  private async sendActivationEmail(email: string, username: string, verificationLink: string) {
+    const emailApiUrl = this.configService.get<string>('EMAIL_API_URL');
+    const emailApiToken = this.configService.get<string>('EMAIL_API_TOKEN');
+
+    if (!emailApiUrl || !emailApiToken) {
+      throw new InternalServerErrorException('Servicio de correo no configurado');
+    }
+
+    const response = await fetch(emailApiUrl, {
+      method: 'POST',
+      headers: {
+        Accept: '*/*',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${emailApiToken}`,
+      },
+      body: JSON.stringify({
+        event: 'USER_CREATED',
+        data: {
+          email,
+          verificationLink,
+          username,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'No response body');
+      throw new InternalServerErrorException(
+        `Error al enviar correo de activacion: ${response.status} ${response.statusText} - ${errorText}`,
+      );
+    }
+  }
+
   async login(loginDto: LoginDto) {
     const user = await this.usersService.findByEmail(
       loginDto.correo_institucional,
