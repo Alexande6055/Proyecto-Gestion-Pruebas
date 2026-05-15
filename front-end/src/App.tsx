@@ -10,9 +10,6 @@ import {
   UserCircle,
   Search,
   LogOut,
-  Wifi,
-  WifiOff,
-  Loader2,
   ChevronRight,
   Bell,
 } from 'lucide-react'

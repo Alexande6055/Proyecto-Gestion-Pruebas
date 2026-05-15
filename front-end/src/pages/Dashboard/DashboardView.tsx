@@ -20,7 +20,6 @@ import {
 } from 'lucide-react'
 
 import { Badge } from '../../components/common/Badge'
-import { StatCard } from '../../components/common/StatCard'
 import { EmptyState } from '../../components/common/EmptyState'
 import type { EntityRow, ViewKey, EntityState } from '../../types'
 import { managedViews, statusTone } from '../../constants/entities'

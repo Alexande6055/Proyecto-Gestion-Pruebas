@@ -11,7 +11,6 @@ import {
   MapPin,
   GraduationCap,
   Phone,
-  Camera,
   Lock,
   Eye,
   EyeOff,

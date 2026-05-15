@@ -14,7 +14,6 @@ import {
   Database,
   FileText,
   ChevronDown,
-  Trash2,
   Plus
 } from 'lucide-react'
 import { Badge } from '../../components/common/Badge'
@@ -515,7 +514,7 @@ function Table({
         </tr>
       </thead>
       <tbody className="divide-y divide-night-100">
-        {rows.map((row, index) => (
+        {rows.map((row) => (
           <tr 
             key={String(row.id ?? JSON.stringify(row))}
             className="hover:bg-uride-50/30 transition-colors duration-150"
