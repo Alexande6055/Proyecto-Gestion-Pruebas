@@ -92,8 +92,8 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-night-900 to-night-800 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-uride overflow-hidden shadow-night-xl">
+    <main className="min-h-screen bg-night-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-uride overflow-hidden shadow-night-xl border border-night-200">
 
         {/* Hero Section */}
         <section className="bg-gradient-to-br from-uride-500 to-uride-700 p-8 sm:p-12 lg:p-16 flex flex-col justify-between text-white relative overflow-hidden">
@@ -327,19 +327,21 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
 
             {/* Messages */}
             {message && (
-              <div className="alert-uride-warning">
-                <p className="font-semibold mb-1 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Accion completada
-                </p>
-                <p>{message}</p>
+              <div className="alert-uride-info flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-info-700 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-info-900 text-sm mb-0.5">Accion completada</p>
+                  <p className="text-info-900 text-sm">{message}</p>
+                </div>
               </div>
             )}
             {error && (
-              <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-uride-xs text-red-800 text-sm">
-                <p className="font-semibold mb-1 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-600" /> Error
-                </p>
-                <p>{error}</p>
+              <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-uride-xs flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-red-900 text-sm mb-0.5">Error</p>
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
               </div>
             )}
 

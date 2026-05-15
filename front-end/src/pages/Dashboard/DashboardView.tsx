@@ -1,3 +1,24 @@
+import { 
+  Car, 
+  Users, 
+  MapPin, 
+  Clock, 
+  AlertTriangle, 
+  Star, 
+  TrendingUp, 
+  Plus, 
+  ArrowRight,
+  Shield,
+  Activity,
+  MessageSquare,
+  Route,
+  ChevronRight,
+  Loader2,
+  Bell,
+  Search,
+  Filter
+} from 'lucide-react'
+
 import { Badge } from '../../components/common/Badge'
 import { StatCard } from '../../components/common/StatCard'
 import { EmptyState } from '../../components/common/EmptyState'
@@ -16,13 +37,16 @@ export function DashboardView({ data }: DashboardViewProps) {
   const ratings = data.ratings.rows
   const reports = data.reports.rows
   const loading = managedViews.some((key) => data[key].loading)
+
   const activeTrips = trips.filter((trip) => ['abierto', 'completo'].includes(String(trip.estado))).length
   const pendingRequests = requests.filter((request) => request.estado === 'pendiente').length
   const openReports = reports.filter((report) => report.estado !== 'resuelto').length
+
   const ratingValues = ratings.map((rating) => Number(rating.puntuacion)).filter((value) => Number.isFinite(value))
   const averageRating = ratingValues.length
     ? (ratingValues.reduce((sum, rating) => sum + rating, 0) / ratingValues.length).toFixed(1)
     : '0.0'
+
   const userLabel = (row: EntityRow, relationKey: string, idKey: string) => {
     const id = row[idKey] as string | number | null | undefined
     const user = users.find((item) => String(item.id) === String(id))
@@ -31,74 +55,464 @@ export function DashboardView({ data }: DashboardViewProps) {
   }
 
   return (
-    <div className="view-stack">
-      <section className="hero-panel">
-        <div>
-          <p className="eyebrow">U-Ride</p>
-          <h1>Gestion de transporte compartido estudiantil</h1>
-          <p className="hero-copy">
-            Panel conectado al backend para consultar usuarios, viajes, solicitudes, calificaciones, reportes y auditoria.
-          </p>
-        </div>
-        <div className="hero-actions">
-          <button type="button">Nuevo viaje</button>
-          <button type="button" className="secondary">Nuevo reporte</button>
-        </div>
-      </section>
+    <div className="min-h-screen bg-night-50">
 
-      <section className="stats-grid">
-        <StatCard label="Usuarios" value={loading ? '...' : String(users.length)} detail="Registros en users" />
-        <StatCard label="Viajes activos" value={loading ? '...' : String(activeTrips)} detail="Abiertos o completos" />
-        <StatCard label="Solicitudes pendientes" value={loading ? '...' : String(pendingRequests)} detail="Registros en requests" />
-        <StatCard label="Reputacion global" value={loading ? '...' : averageRating} detail={`${openReports} reportes abiertos`} />
-      </section>
-
-      <section className="split-grid">
-        <div className="panel">
-          <div className="panel-title">
-            <h2>Viajes recientes</h2>
-            <Badge tone="info">trips</Badge>
-          </div>
-          {trips.length ? (
-            <div className="timeline">
-              {trips.slice(0, 6).map((trip) => (
-                <article key={String(trip.id)} className="timeline-item">
-                  <time>{String(trip.fecha_hora ?? '')}</time>
-                  <strong>{String(trip.origen_zona ?? '')} {'->'} {String(trip.destino_zona ?? '')}</strong>
-                  <span>{userLabel(trip, 'conductor', 'conductor_id')} - {String(trip.cupos_disponibles ?? 0)} cupos</span>
-                </article>
-              ))}
+      {/* TOP NAVIGATION BAR */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-night-200">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-uride-xs bg-gradient-to-br from-uride-500 to-uride-600 flex items-center justify-center shadow-uride">
+                <Car className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-night-900 leading-tight">U-Ride</h1>
+                <p className="text-[10px] font-semibold text-uride-600 uppercase tracking-wider leading-tight">Admin Panel</p>
+              </div>
             </div>
-          ) : (
-            <EmptyState title="Sin viajes" message="Cuando el backend devuelva trips, apareceran aqui." />
-          )}
-        </div>
-        <div className="panel">
-          <div className="panel-title">
-            <h2>Reportes activos</h2>
-            <Badge tone="warning">reports</Badge>
+
+            <div className="hidden md:flex items-center gap-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-night-400" />
+                <input 
+                  type="text"
+                  placeholder="Buscar viajes, usuarios..."
+                  className="input-uride pl-10 pr-4 py-2 text-sm w-64"
+                />
+              </div>
+              <button className="relative p-2 rounded-uride-xs hover:bg-night-100 transition-colors">
+                <Bell className="w-5 h-5 text-night-600" />
+                {pendingRequests > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-uride-500 rounded-full animate-pulse" />
+                )}
+              </button>
+              <div className="w-8 h-8 rounded-full bg-uride-100 flex items-center justify-center border-2 border-uride-200">
+                <Users className="w-4 h-4 text-uride-600" />
+              </div>
+            </div>
           </div>
-          {reports.length ? (
-            <div className="review-list">
-              {reports.slice(0, 6).map((report) => (
-                <article key={String(report.id)} className="compact-row">
-                  <div>
-                    <strong>
-                      {userLabel(report, 'reportante', 'reportante_id')}
-                      {' reporta a '}
-                      {userLabel(report, 'reportado', 'reportado_id')}
-                    </strong>
-                    <span>{String(report.motivo ?? '')}</span>
+        </div>
+      </nav>
+
+      {/* HERO PANEL - Modo Claro */}
+      <section className="relative overflow-hidden bg-white border-b border-night-200 px-6 py-10 sm:px-8 lg:px-12">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute top-0 right-0 w-72 h-72 bg-uride-100 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-56 h-56 bg-info-100 rounded-full translate-y-1/3 -translate-x-1/4 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="badge-uride">Panel Administrativo</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  En linea
+                </span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-night-900 tracking-tight">
+                Gestion de <span className="text-gradient-uride">transporte compartido</span> estudiantil
+              </h1>
+              <p className="text-night-500 text-base leading-relaxed max-w-2xl">
+                Panel conectado al backend para consultar usuarios, viajes, solicitudes, calificaciones, reportes y auditoria en tiempo real.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <button 
+                type="button"
+                className="btn-uride-primary"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo viaje
+              </button>
+              <button 
+                type="button"
+                className="btn-uride-secondary"
+              >
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Nuevo reporte
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* STATS GRID - Modo Claro */}
+      <section className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 -mt-6 relative z-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          {/* Users Stat */}
+          <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-11 h-11 rounded-uride-xs bg-gradient-to-br from-uride-50 to-uride-100 flex items-center justify-center shadow-night">
+                <Users className="w-5 h-5 text-uride-600" />
+              </div>
+              <span className="badge-uride">Usuarios</span>
+            </div>
+            <div className="text-3xl font-extrabold text-night-900">
+              {loading ? (
+                <Loader2 className="w-6 h-6 animate-spin text-uride-500" />
+              ) : (
+                users.length
+              )}
+            </div>
+            <p className="text-sm text-night-500 mt-1">Registros activos en el sistema</p>
+            <div className="mt-3 h-1.5 bg-night-100 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-uride-400 to-uride-500 rounded-full" style={{ width: '75%' }} />
+            </div>
+          </div>
+
+          {/* Active Trips Stat */}
+          <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-11 h-11 rounded-uride-xs bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-night">
+                <Route className="w-5 h-5 text-blue-600" />
+              </div>
+              <span className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold uppercase tracking-wider rounded-full">
+                Viajes
+              </span>
+            </div>
+            <div className="text-3xl font-extrabold text-night-900">
+              {loading ? (
+                <Loader2 className="w-6 h-6 animate-spin text-uride-500" />
+              ) : (
+                activeTrips
+              )}
+            </div>
+            <p className="text-sm text-night-500 mt-1">Viajes abiertos o completos</p>
+            <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-blue-600">
+              <Activity className="w-3.5 h-3.5" />
+              <span>{trips.length} total registrados</span>
+            </div>
+          </div>
+
+          {/* Pending Requests Stat */}
+          <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-11 h-11 rounded-uride-xs bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center shadow-night">
+                <Clock className="w-5 h-5 text-amber-600" />
+              </div>
+              <span className="inline-flex items-center px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wider rounded-full">
+                Solicitudes
+              </span>
+            </div>
+            <div className="text-3xl font-extrabold text-night-900">
+              {loading ? (
+                <Loader2 className="w-6 h-6 animate-spin text-uride-500" />
+              ) : (
+                pendingRequests
+              )}
+            </div>
+            <p className="text-sm text-night-500 mt-1">Pendientes de aprobacion</p>
+            {pendingRequests > 0 && (
+              <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-amber-600">
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>Requieren atencion inmediata</span>
+              </div>
+            )}
+          </div>
+
+          {/* Rating Stat */}
+          <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-11 h-11 rounded-uride-xs bg-gradient-to-br from-yellow-50 to-yellow-100 flex items-center justify-center shadow-night">
+                <Star className="w-5 h-5 text-yellow-600 fill-yellow-500" />
+              </div>
+              <span className="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold uppercase tracking-wider rounded-full">
+                Ratings
+              </span>
+            </div>
+            <div className="text-3xl font-extrabold text-night-900 flex items-center gap-2">
+              {loading ? (
+                <Loader2 className="w-6 h-6 animate-spin text-uride-500" />
+              ) : (
+                <>
+                  {averageRating}
+                  <span className="text-lg text-yellow-500 font-bold">/5</span>
+                </>
+              )}
+            </div>
+            <p className="text-sm text-night-500 mt-1">Calificacion promedio</p>
+            {Number(averageRating) >= 4 && (
+              <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-uride-600">
+                <Shield className="w-3.5 h-3.5" />
+                <span>Excelente reputacion</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* SPLIT GRID - Trips & Reports - Modo Claro */}
+      <section className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* Recent Trips Panel */}
+          <div className="card-uride hover:shadow-night-xl transition-shadow duration-300">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-night-100">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-uride-100 to-uride-200 flex items-center justify-center">
+                  <Car className="w-4 h-4 text-uride-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-night-900">Viajes recientes</h2>
+                  <p className="text-xs text-night-500">Ultimos 6 registros activos</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-1.5 rounded-uride-xs hover:bg-night-100 transition-colors">
+                  <Filter className="w-4 h-4 text-night-400" />
+                </button>
+                <Badge tone="info">trips</Badge>
+              </div>
+            </div>
+
+            <div className="p-2">
+              {trips.length ? (
+                <div className="space-y-1">
+                  {trips.slice(0, 6).map((trip, index) => (
+                    <article 
+                      key={String(trip.id)} 
+                      className="group flex items-center gap-4 p-3 rounded-uride-xs hover:bg-uride-50/60 transition-all duration-200 cursor-pointer"
+                    >
+                      {/* Trip number indicator */}
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-night-100 to-night-200 flex items-center justify-center text-xs font-bold text-night-600">
+                        {index + 1}
+                      </div>
+
+                      {/* Trip details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 text-sm font-bold text-night-900">
+                          <MapPin className="w-3.5 h-3.5 text-uride-500 flex-shrink-0" />
+                          <span className="truncate">{String(trip.origen_zona ?? 'Sin origen')}</span>
+                          <ArrowRight className="w-3.5 h-3.5 text-night-300 flex-shrink-0" />
+                          <MapPin className="w-3.5 h-3.5 text-uride-600 flex-shrink-0" />
+                          <span className="truncate">{String(trip.destino_zona ?? 'Sin destino')}</span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1.5 text-xs text-night-500">
+                          <span className="flex items-center gap-1 bg-night-50 px-2 py-0.5 rounded-full">
+                            <Clock className="w-3 h-3" />
+                            {String(trip.fecha_hora ?? 'Sin fecha')}
+                          </span>
+                          <span className="flex items-center gap-1 bg-night-50 px-2 py-0.5 rounded-full">
+                            <Users className="w-3 h-3" />
+                            {String(trip.cupos_disponibles ?? 0)} cupos
+                          </span>
+                          <span className="flex items-center gap-1 text-uride-600 font-semibold bg-uride-50 px-2 py-0.5 rounded-full">
+                            <Car className="w-3 h-3" />
+                            {userLabel(trip, 'conductor', 'conductor_id')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Arrow indicator */}
+                      <ChevronRight className="w-4 h-4 text-night-300 group-hover:text-uride-500 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8">
+                  <EmptyState 
+                    title="Sin viajes" 
+                    message="Cuando el backend devuelva trips, apareceran aqui." 
+                  />
+                </div>
+              )}
+            </div>
+
+            {trips.length > 6 && (
+              <div className="px-6 py-3 border-t border-night-100">
+                <button className="link-uride text-sm flex items-center gap-1">
+                  Ver todos los viajes
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Active Reports Panel */}
+          <div className="card-uride hover:shadow-night-xl transition-shadow duration-300">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-night-100">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-100 to-red-200 flex items-center justify-center">
+                  <MessageSquare className="w-4 h-4 text-red-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-night-900">Reportes activos</h2>
+                  <p className="text-xs text-night-500">{openReports} abiertos de {reports.length} total</p>
+                </div>
+              </div>
+              <Badge tone="warning">reports</Badge>
+            </div>
+
+            <div className="p-2">
+              {reports.length ? (
+                <div className="space-y-1">
+                  {reports.slice(0, 6).map((report) => (
+                    <article 
+                      key={String(report.id)} 
+                      className="group flex items-start gap-3 p-3 rounded-uride-xs hover:bg-red-50/40 transition-all duration-200 cursor-pointer"
+                    >
+                      {/* Status indicator */}
+                      <div className={`flex-shrink-0 w-2.5 h-2.5 mt-2 rounded-full ${
+                        report.estado === 'resuelto' ? 'bg-uride-500' : 'bg-red-500 animate-pulse'
+                      }`} />
+
+                      {/* Report content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-night-900">
+                            {userLabel(report, 'reportante', 'reportante_id')}
+                          </span>
+                          <span className="text-xs text-night-400 bg-night-50 px-1.5 py-0.5 rounded">reporta a</span>
+                          <span className="text-sm font-bold text-night-900">
+                            {userLabel(report, 'reportado', 'reportado_id')}
+                          </span>
+                        </div>
+                        <p className="text-xs text-night-500 mt-1.5 line-clamp-1 bg-night-50 px-2 py-1 rounded">
+                          {String(report.motivo ?? 'Sin motivo especificado')}
+                        </p>
+                      </div>
+
+                      {/* Status badge */}
+                      <Badge tone={statusTone[String(report.estado)]}>
+                        {String(report.estado ?? '')}
+                      </Badge>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8">
+                  <EmptyState 
+                    title="Sin reportes" 
+                    message="Cuando el backend devuelva reports, apareceran aqui." 
+                  />
+                </div>
+              )}
+            </div>
+
+            {reports.length > 6 && (
+              <div className="px-6 py-3 border-t border-night-100">
+                <button className="text-red-600 font-bold text-sm hover:text-red-700 flex items-center gap-1 transition-colors">
+                  Ver todos los reportes
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ACTIVITY CHART SECTION - Nueva seccion modo claro */}
+      <section className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pb-6">
+        <div className="card-uride p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-info-100 to-info-200 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-info-700" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-night-900">Actividad del sistema</h2>
+                <p className="text-xs text-night-500">Resumen general de todas las entidades</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-uride-500" />
+                Usuarios: {users.length}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                Viajes: {trips.length}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                Solicitudes: {requests.length}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                Calificaciones: {ratings.length}
+              </span>
+            </div>
+          </div>
+
+          {/* Visual bars */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { label: 'Usuarios', count: users.length, color: 'from-uride-400 to-uride-500', icon: Users },
+              { label: 'Viajes', count: trips.length, color: 'from-blue-400 to-blue-500', icon: Route },
+              { label: 'Solicitudes', count: requests.length, color: 'from-amber-400 to-amber-500', icon: Clock },
+              { label: 'Calificaciones', count: ratings.length, color: 'from-yellow-400 to-yellow-500', icon: Star },
+            ].map((item) => {
+              const maxVal = Math.max(users.length, trips.length, requests.length, ratings.length, 1)
+              const percentage = maxVal > 0 ? (item.count / maxVal) * 100 : 0
+              return (
+                <div key={item.label} className="bg-night-50 rounded-uride-xs p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <item.icon className="w-4 h-4 text-night-400" />
+                    <span className="text-xs font-semibold text-night-500 uppercase tracking-wider">{item.label}</span>
                   </div>
-                  <Badge tone={statusTone[String(report.estado)]}>{String(report.estado ?? '')}</Badge>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <EmptyState title="Sin reportes" message="Cuando el backend devuelva reports, apareceran aqui." />
-          )}
+                  <div className="text-2xl font-extrabold text-night-900 mb-2">{item.count}</div>
+                  <div className="h-2 bg-night-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-1000`}
+                      style={{ width: `${Math.max(percentage, 5)}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </section>
+
+      {/* QUICK ACTIONS BAR - Modo Claro */}
+      <section className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pb-12">
+        <div className="card-uride p-6 bg-gradient-to-r from-night-800 to-night-900">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-uride-xs bg-uride-500/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-uride-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Resumen de actividad</h3>
+                <p className="text-sm text-night-400">
+                  {users.length} usuarios · {trips.length} viajes · {requests.length} solicitudes · {ratings.length} calificaciones
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button className="btn-uride-secondary text-sm py-2.5 px-5">
+                <Users className="w-4 h-4 mr-2" />
+                Gestionar usuarios
+              </button>
+              <button className="btn-uride-primary text-sm py-2.5 px-5">
+                <Car className="w-4 h-4 mr-2" />
+                Ver viajes
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t border-night-200 bg-white">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Car className="w-4 h-4 text-uride-500" />
+              <span className="text-sm font-bold text-night-700">U-Ride</span>
+              <span className="text-sm text-night-400">| Panel Administrativo</span>
+            </div>
+            <p className="text-xs text-night-400">
+              Sistema de gestion de transporte compartido estudiantil
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
