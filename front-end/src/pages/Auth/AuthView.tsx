@@ -398,3 +398,5 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
     </main>
   )
 }
+
+export default AuthView

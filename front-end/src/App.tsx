@@ -1,18 +1,5 @@
-import { useEffect, useState } from 'react'
-import {
-  LayoutDashboard,
-  Users,
-  Car,
-  ClipboardList,
-  Star,
-  MessageSquareWarning,
-  ScrollText,
-  UserCircle,
-  Search,
-  LogOut,
-  ChevronRight,
-  Bell,
-} from 'lucide-react'
+import { useEffect, useState, lazy, Suspense, useMemo } from 'react'
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 
 // Types
 import type { AuthSession, ViewKey, EntityState } from './types'
@@ -30,32 +17,24 @@ import { requestJson, normalizeRows, authService } from './services'
 import { usersService, tripsService, requestsService, ratingsService, reportsService, entityService } from './services'
 
 // Components
-import { Badge, LoadingBadge } from './components/common/Badge'
+import { MainLayout } from './components/layout/MainLayout'
 
-// Pages
-import { AuthView } from './pages/Auth/AuthView'
-import { DashboardView } from './pages/Dashboard/DashboardView'
-import { EntityView } from './pages/Entity/EntityView'
-import { TripsView } from './pages/Trips/TripsView'
-import { ProfileView } from './pages/Profile/ProfileView'
-import { UsersView } from './pages/Users/UsersView'
-import { RequestsView } from './pages/Requests/RequestsView'
-import { RatingsView } from './pages/Ratings/RatingsView'
-import { ReportsView } from './pages/Reports/ReportsView'
-import { AuditLogsView } from './pages/AuditLogs/AuditLogsView'
-
-const viewIcons: Record<ViewKey, React.ElementType> = {
-  dashboard: LayoutDashboard,
-  users: Users,
-  trips: Car,
-  requests: ClipboardList,
-  ratings: Star,
-  reports: MessageSquareWarning,
-  audit_logs: ScrollText,
-  profile: UserCircle,
-}
+// Pages (Lazy loading)
+const AuthView = lazy(() => import('./pages/Auth/AuthView'))
+const DashboardView = lazy(() => import('./pages/Dashboard/DashboardView'))
+const UsersView = lazy(() => import('./pages/Users/UsersView'))
+const TripsView = lazy(() => import('./pages/Trips/TripsView'))
+const RequestsView = lazy(() => import('./pages/Requests/RequestsView'))
+const RatingsView = lazy(() => import('./pages/Ratings/RatingsView'))
+const ReportsView = lazy(() => import('./pages/Reports/ReportsView'))
+const AuditLogsView = lazy(() => import('./pages/AuditLogs/AuditLogsView'))
+const ProfileView = lazy(() => import('./pages/Profile/ProfileView'))
+const EntityView = lazy(() => import('./pages/Entity/EntityView'))
 
 function App() {
+  const location = useLocation()
+  const navigate = useNavigate()
+
   const [session, setSession] = useState<AuthSession | null>(() => {
     try {
       const storedSession = localStorage.getItem('uride-session')
@@ -65,7 +44,6 @@ function App() {
     }
   })
 
-  const [activeView, setActiveView] = useState<ViewKey>('dashboard')
   const [search, setSearch] = useState('')
   const [refreshToken, setRefreshToken] = useState(0)
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking')
@@ -82,12 +60,24 @@ function App() {
     profile: initialEntityState,
   })
 
+  const activeView = useMemo<ViewKey>(() => {
+    const path = location.pathname
+    if (path === '/') return 'dashboard'
+    return path.substring(1).replace('-', '_') as ViewKey
+  }, [location.pathname])
+
   const isAdmin = session?.user.role === 'admin'
-  const visibleViews = (Object.keys(viewLabels) as ViewKey[]).filter((key) =>
-    isAdmin || !['users', 'audit_logs'].includes(key),
+
+  const visibleViews = useMemo(() => 
+    (Object.keys(viewLabels) as ViewKey[]).filter((key) =>
+      isAdmin || !['users', 'audit_logs'].includes(key),
+    ), [isAdmin]
   )
-  const loadableViews = managedViews.filter((key) =>
-    isAdmin || !['users', 'audit_logs'].includes(key),
+
+  const loadableViews = useMemo(() => 
+    managedViews.filter((key) =>
+      isAdmin || !['users', 'audit_logs'].includes(key),
+    ), [isAdmin]
   )
 
   useEffect(() => {
@@ -173,13 +163,17 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [refreshToken, session, isAdmin])
+  }, [refreshToken, session, isAdmin, loadableViews])
 
+  // Security: redirect if trying to access unauthorized view
   useEffect(() => {
     if (session && !visibleViews.includes(activeView)) {
-      setActiveView('dashboard')
+      // Check if it's a valid view at all, if not, it might be a 404
+      if (Object.keys(viewLabels).includes(activeView)) {
+        navigate('/')
+      }
     }
-  }, [activeView, session, visibleViews])
+  }, [activeView, session, visibleViews, navigate])
 
   const handleLogout = async () => {
     try {
@@ -188,236 +182,71 @@ function App() {
       authService.clearSession()
       setSession(null)
       setSearch('')
-      setActiveView('dashboard')
+      navigate('/')
     }
   }
 
-  if (!session) {
-    return <AuthView onAuthenticated={setSession} />
-  }
+  const handleCreated = () => setRefreshToken((value) => value + 1)
 
-  let currentView: React.ReactNode
-  if (activeView === 'dashboard') {
-    currentView = <DashboardView data={data} />
-  } else if (activeView === 'profile') {
-    currentView = <ProfileView session={session} onSessionUpdate={setSession} />
-  } else if (activeView === 'trips') {
-    currentView = (
-      <TripsView
-        state={data.trips}
-        data={data}
-        session={session}
-        onCreated={() => setRefreshToken((value) => value + 1)}
-      />
-    )
-  } else if (activeView === 'users') {
-    currentView = (
-      <UsersView
-        state={data.users}
-        data={data}
-        session={session}
-        onCreated={() => setRefreshToken((value) => value + 1)}
-        search={search}
-      />
-    )
-  } else if (activeView === 'requests') {
-    currentView = (
-      <RequestsView
-        state={data.requests}
-        data={data}
-        session={session}
-        onCreated={() => setRefreshToken((value) => value + 1)}
-        search={search}
-      />
-    )
-  } else if (activeView === 'ratings') {
-    currentView = (
-      <RatingsView
-        state={data.ratings}
-        data={data}
-        session={session}
-        onCreated={() => setRefreshToken((value) => value + 1)}
-        search={search}
-      />
-    )
-  } else if (activeView === 'reports') {
-    currentView = (
-      <ReportsView
-        state={data.reports}
-        data={data}
-        session={session}
-        onCreated={() => setRefreshToken((value) => value + 1)}
-        search={search}
-      />
-    )
-  } else if (activeView === 'audit_logs') {
-    currentView = (
-      <AuditLogsView
-        state={data.audit_logs}
-        data={data}
-        session={session}
-        onCreated={() => setRefreshToken((value) => value + 1)}
-        search={search}
-      />
-    )
-  } else {
-    currentView = (
-      <EntityView
-        config={entityConfigs[activeView]}
-        state={data[activeView]}
-        data={data}
-        search={search}
-        session={session}
-        onCreated={() => setRefreshToken((value) => value + 1)}
-      />
+  if (!session) {
+    return (
+      <Suspense fallback={<div className="h-screen flex items-center justify-center">Cargando...</div>}>
+        <AuthView onAuthenticated={setSession} />
+      </Suspense>
     )
   }
 
   return (
-    <div className="h-screen min-h-screen bg-night-50 flex overflow-hidden">
-
-      {/* SIDEBAR - LIGHT MODE */}
-      <aside 
-        className={`${sidebarOpen ? 'w-64' : 'w-20'} shrink-0 bg-white border-r border-night-100 flex flex-col transition-all duration-300`}
-      >
-        {/* Brand */}
-        <div className="h-16 flex items-center gap-3 px-5 border-b border-night-100">
-          <div className="w-9 h-9 rounded-lg bg-linear-to-br from-uride-500 to-uride-600 flex items-center justify-center shrink-0 shadow-uride">
-            <Car className="w-5 h-5 text-white" />
-          </div>
-          {sidebarOpen && (
-            <div className="overflow-hidden">
-              <h1 className="text-lg font-extrabold text-night-900 tracking-tight leading-none">U-Ride</h1>
-              <p className="text-[10px] text-night-400 font-medium uppercase tracking-wider">Gestion de viajes</p>
-            </div>
-          )}
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto" aria-label="Vistas del sistema">
-          {visibleViews.map((key) => {
-            const Icon = viewIcons[key]
-            const isActive = activeView === key
+    <Suspense fallback={<div className="h-screen flex items-center justify-center">Cargando...</div>}>
+      <Routes>
+        <Route element={
+          <MainLayout
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+            visibleViews={visibleViews}
+            activeView={activeView}
+            backendStatus={backendStatus}
+            search={search}
+            setSearch={setSearch}
+            session={session}
+            handleLogout={handleLogout}
+          />
+        }>
+          <Route path="/" element={<DashboardView data={data} />} />
+          <Route path="/profile" element={<ProfileView session={session} onSessionUpdate={setSession} />} />
+          <Route path="/trips" element={<TripsView state={data.trips} data={data} session={session} onCreated={handleCreated} />} />
+          <Route path="/users" element={isAdmin ? <UsersView state={data.users} data={data} session={session} onCreated={handleCreated} search={search} /> : <Navigate to="/" />} />
+          <Route path="/requests" element={<RequestsView state={data.requests} data={data} session={session} onCreated={handleCreated} search={search} />} />
+          <Route path="/ratings" element={<RatingsView state={data.ratings} data={data} session={session} onCreated={handleCreated} search={search} />} />
+          <Route path="/reports" element={<ReportsView state={data.reports} data={data} session={session} onCreated={handleCreated} search={search} />} />
+          <Route path="/audit-logs" element={isAdmin ? <AuditLogsView state={data.audit_logs} data={data} session={session} onCreated={handleCreated} search={search} /> : <Navigate to="/" />} />
+          
+          {/* Generic entity views for any other managed views that don't have specialized components yet */}
+          {managedViews.map(key => {
+            const path = `/${key.replace('_', '-')}`
+            if (['users', 'trips', 'requests', 'ratings', 'reports', 'audit_logs'].includes(key)) return null
             return (
-              <button
+              <Route 
                 key={key}
-                type="button"
-                onClick={() => setActiveView(key)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-uride-xs text-sm font-semibold transition-all duration-200 group ${
-                  isActive
-                    ? 'bg-uride-50 text-uride-600 border-l-2 border-uride-500'
-                    : 'text-night-500 hover:bg-night-50 hover:text-night-700 border-l-2 border-transparent'
-                }`}
-              >
-                <Icon className={`w-5 h-5 shrink-0 transition-colors ${
-                  isActive ? 'text-uride-500' : 'text-night-400 group-hover:text-night-600'
-                }`} />
-                {sidebarOpen && (
-                  <span className="truncate">{viewLabels[key]}</span>
-                )}
-                {isActive && sidebarOpen && (
-                  <ChevronRight className="w-4 h-4 ml-auto text-uride-500 shrink-0" />
-                )}
-              </button>
+                path={path} 
+                element={
+                  <EntityView
+                    config={entityConfigs[key]}
+                    state={data[key]}
+                    data={data}
+                    search={search}
+                    session={session}
+                    onCreated={handleCreated}
+                  />
+                } 
+              />
             )
           })}
-        </nav>
 
-        {/* Sidebar footer / toggle */}
-        <div className="p-3 border-t border-night-100">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-uride-xs text-night-400 hover:bg-night-50 hover:text-night-600 transition-all duration-200 text-xs font-medium"
-          >
-            {sidebarOpen ? (
-              <>
-                <ChevronRight className="w-4 h-4 rotate-180" />
-                <span>Colapsar menu</span>
-              </>
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </button>
-        </div>
-      </aside>
-
-      {/* WORKSPACE */}
-      <section className="flex-1 flex flex-col min-h-0 min-w-0 bg-night-50">
-
-        {/* TOPBAR - LIGHT MODE */}
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-night-100 flex items-center justify-between px-6 sticky top-0 z-30">
-          {/* Left: Breadcrumb + View title */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-night-400 text-sm">
-              <span className="font-medium">Panel</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-              <span className="font-semibold text-night-700">{viewLabels[activeView]}</span>
-            </div>
-          </div>
-
-          {/* Right: Status + Search + User */}
-          <div className="flex items-center gap-4">
-            {/* Backend Status */}
-            {backendStatus === 'checking' ? (
-              <LoadingBadge>Verificando backend</LoadingBadge>
-            ) : backendStatus === 'online' ? (
-              <Badge tone="ok" className="bg-uride-50 text-uride-700 border border-uride-200">
-                Backend online
-              </Badge>
-            ) : (
-              <Badge tone="danger" className="bg-red-50 text-red-700 border border-red-200">
-                Backend offline
-              </Badge>
-            )}
-
-            {/* Search */}
-            <div className="relative hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-night-400 pointer-events-none" />
-              <input
-                aria-label="Buscar"
-                placeholder="Buscar por atributo..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="w-64 pl-9 pr-4 py-2 bg-night-50 border border-night-200 rounded-uride-xs text-sm text-night-800 placeholder-night-400 focus:outline-none focus:ring-2 focus:ring-uride-500/30 focus:border-uride-500 transition-all duration-200"
-              />
-            </div>
-
-            {/* Notifications */}
-            <button className="relative p-2 rounded-lg text-night-400 hover:bg-night-100 hover:text-night-600 transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-uride-500 rounded-full" />
-            </button>
-
-            {/* User Session */}
-            <div className="flex items-center gap-3 pl-4 border-l border-night-200">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-linear-to-br from-uride-500 to-uride-600 flex items-center justify-center">
-                  <UserCircle className="w-5 h-5 text-white" />
-                </div>
-                <div className="hidden md:block">
-                  <p className="text-sm font-semibold text-night-800 leading-tight">{session.user.nombre}</p>
-                  <p className="text-xs text-night-500 capitalize">{session.user.role}</p>
-                </div>
-              </div>
-              <button 
-                type="button" 
-                onClick={handleLogout}
-                className="p-2 rounded-lg text-night-400 hover:bg-red-50 hover:text-red-500 transition-all duration-200"
-                title="Cerrar sesion"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* MAIN CONTENT */}
-        <main className="flex-1 min-h-0 overflow-y-auto p-6">
-          {currentView}
-        </main>
-      </section>
-    </div>
+          <Route path="*" element={<Navigate to="/" />} />
+        </Route>
+      </Routes>
+    </Suspense>
   )
 }
 

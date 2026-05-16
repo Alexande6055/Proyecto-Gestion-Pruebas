@@ -458,3 +458,5 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
     </div>
   )
 }
+
+export default ProfileView

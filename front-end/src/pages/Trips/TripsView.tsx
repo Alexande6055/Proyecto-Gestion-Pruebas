@@ -346,3 +346,6 @@ function formatCellText(value: EntityRow[string]) {
   if (value && typeof value === 'object') return JSON.stringify(value)
   return String(value ?? '')
 }
+
+export default TripsView
+

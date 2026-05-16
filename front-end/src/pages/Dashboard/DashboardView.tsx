@@ -514,3 +514,5 @@ export function DashboardView({ data }: DashboardViewProps) {
     </div>
   )
 }
+
+export default DashboardView
