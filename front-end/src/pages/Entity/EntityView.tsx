@@ -1,4 +1,6 @@
-import { useState, useMemo, type FormEvent, type ReactNode } from 'react'
+import { useState, useMemo, type ReactNode } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { 
   BadgeCheck, 
   AlertCircle, 
@@ -28,6 +30,10 @@ import { usersService, tripsService, requestsService } from '../../services'
 import { statusTone } from '../../constants/entities'
 import { getRelatedName, getRelationLabel } from '../../utils/entityHelpers'
 
+// Schemas
+import { userSchema, type UserFormData } from '../../schemas/userSchema'
+import { tripSchema } from '../../schemas/tripSchema'
+
 interface EntityViewProps {
   config: EntityConfig
   state: EntityState
@@ -39,12 +45,28 @@ interface EntityViewProps {
 }
 
 export function EntityView({ config, state, data, search, session, onCreated, ui }: EntityViewProps) {
-  const [formData, setFormData] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [editingUserId, setEditingUserId] = useState('')
   const [actionMessage, setActionMessage] = useState('')
   const [detailRow, setDetailRow] = useState<EntityRow | null>(null)
+
+  // Determine which schema to use
+  const schema = useMemo(() => {
+    if (config.key === 'users') return userSchema
+    if (config.key === 'trips') return tripSchema
+    return null
+  }, [config.key])
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<any>({
+    resolver: schema ? zodResolver(schema) : undefined,
+  })
 
   const filteredRows = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -54,8 +76,7 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
     )
   }, [config.columns, search, state.rows])
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const onFormSubmit = async (formData: any) => {
     setSaving(true)
     setSaveError('')
     setActionMessage('')
@@ -67,29 +88,28 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
       if (config.key === 'users') {
         if (isEditingUser) {
           await usersService.update(editingUserId, payload)
+          setActionMessage('Usuario actualizado correctamente.')
         } else {
           await usersService.create(payload)
+          setActionMessage('Usuario creado correctamente.')
         }
       } else if (config.key === 'trips') {
-        const { tripsService: trips } = await import('../../services')
-        if (isEditingUser) {
-          // En este caso editingUserId es una variable genérica, no es específica de usuarios
-          // Por eso el lógica original no soporta edición de viajes
-        } else {
-          await trips.create(payload)
+        if (!isEditingUser) {
+          await tripsService.create(payload)
+          setActionMessage('Viaje creado correctamente.')
         }
       } else if (config.key === 'requests') {
-        const { requestsService: requests } = await import('../../services')
-        await requests.create(payload)
+        await requestsService.create(payload)
+        setActionMessage('Solicitud creada correctamente.')
       } else if (config.key === 'ratings') {
-        const { ratingsService: ratings } = await import('../../services')
-        await ratings.create(payload)
+        await (await import('../../services')).ratingsService.create(payload)
+        setActionMessage('Calificación creada correctamente.')
       } else if (config.key === 'reports') {
-        const { reportsService: reports } = await import('../../services')
-        await reports.create(payload)
+        await (await import('../../services')).reportsService.create(payload)
+        setActionMessage('Reporte creado correctamente.')
       }
 
-      setFormData({})
+      reset()
       setEditingUserId('')
       onCreated()
     } catch (error) {
@@ -100,20 +120,27 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
   }
 
   const handleEditUser = (row: EntityRow) => {
-    setEditingUserId(String(row.id ?? ''))
+    const userId = String(row.id ?? '')
+    setEditingUserId(userId)
     setDetailRow(null)
     setActionMessage('')
     setSaveError('')
-    setFormData({
-      correo_institucional: String(row.correo_institucional ?? ''),
-      password: '',
-      nombre: String(row.nombre ?? ''),
-      carrera: String(row.carrera ?? ''),
-      foto_url: String(row.foto_url ?? ''),
-      telefono: String(row.telefono ?? ''),
-      zona_barrio: String(row.zona_barrio ?? ''),
-      estado: String(row.estado ?? ''),
+    
+    // Fill form with user data
+    const fields: (keyof UserFormData)[] = [
+      'correo_institucional',
+      'nombre',
+      'carrera',
+      'foto_url',
+      'telefono',
+      'zona_barrio',
+      'estado'
+    ]
+    
+    fields.forEach(field => {
+      setValue(field, String(row[field] ?? ''))
     })
+    setValue('password', '') // Clear password field on edit
   }
 
   const handleResetPassword = async (row: EntityRow) => {
@@ -166,7 +193,6 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
 
     try {
       const conductorId = trip?.conductor_id ?? session.user.id
-      // Asegurar que conductor_id es un tipo válido
       const validConductorId = typeof conductorId === 'string' || typeof conductorId === 'number' || typeof conductorId === 'boolean'
         ? conductorId
         : String(conductorId)
@@ -184,13 +210,12 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
 
   const cancelEdit = () => {
     setEditingUserId('')
-    setFormData({})
+    reset()
     setSaveError('')
   }
 
   const formTitle = editingUserId ? 'Editar usuario' : 'Crear nuevo registro'
 
-  // Determinar icono según la entidad
   const getEntityIcon = () => {
     switch (config.key) {
       case 'users': return <BadgeCheck className="w-5 h-5 text-uride-600" />
@@ -235,15 +260,15 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
                 <Badge tone="neutral">{config.key}</Badge>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-5 space-y-4">
+              <form onSubmit={handleSubmit(onFormSubmit)} className="p-5 space-y-4">
                 <div className="space-y-4">
                   {config.fields.map((field) => (
                     <EntityField
                       key={field.key}
                       field={field}
                       data={data}
-                      value={formData[field.key] ?? ''}
-                      onChange={(value) => setFormData((current) => ({ ...current, [field.key]: value }))}
+                      registration={register(field.key)}
+                      error={errors[field.key]?.message as string}
                       placeholder={ui?.fieldPlaceholders?.[field.key]}
                     />
                   ))}
@@ -514,12 +539,12 @@ function renderCell(row: EntityRow, column: string, field: FieldConfig | undefin
   return <span className="text-sm text-night-700">{text}</span>
 }
 
-function buildPayload(key: ViewKey, formData: Record<string, string>, editingUser: boolean) {
+function buildPayload(key: ViewKey, formData: any, editingUser: boolean) {
   const payload = Object.fromEntries(
     Object.entries(formData)
-      .map(([fieldKey, value]) => [fieldKey, value.trim()])
-      .filter(([, value]) => value),
-  ) as Record<string, string | number>
+      .map(([fieldKey, value]) => [fieldKey, typeof value === 'string' ? value.trim() : value])
+      .filter(([, value]) => value !== '' && value !== undefined)
+  ) as Record<string, any>
 
   if (key === 'users') {
     if (editingUser) {

@@ -32,6 +32,6 @@ export function useEntityData(key: ViewKey, endpoint: string) {
 
       return normalizeRows(payload)
     },
-    enabled: !!endpoint || ['users', 'trips', 'requests', 'ratings', 'reports'].includes(key),
+    enabled: !!endpoint,
   })
 }

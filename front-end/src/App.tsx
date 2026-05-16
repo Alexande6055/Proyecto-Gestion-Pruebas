@@ -60,12 +60,12 @@ function App() {
   )
 
   // Fetch all managed data (This is for the dashboard summary, can be optimized later)
-  const usersQuery = useEntityData('users', entityConfigs.users.endpoint)
+  const usersQuery = useEntityData('users', isAdmin ? entityConfigs.users.endpoint : '')
   const tripsQuery = useEntityData('trips', entityConfigs.trips.endpoint)
   const requestsQuery = useEntityData('requests', entityConfigs.requests.endpoint)
   const ratingsQuery = useEntityData('ratings', entityConfigs.ratings.endpoint)
   const reportsQuery = useEntityData('reports', entityConfigs.reports.endpoint)
-  const auditLogsQuery = useEntityData('audit_logs', entityConfigs.audit_logs.endpoint)
+  const auditLogsQuery = useEntityData('audit_logs', isAdmin ? entityConfigs.audit_logs.endpoint : '')
 
   // Map queries to the data structure expected by views
   const data = useMemo<Record<ViewKey, EntityState>>(() => ({

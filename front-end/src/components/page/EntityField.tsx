@@ -1,16 +1,17 @@
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, AlertCircle } from 'lucide-react'
 import type { FieldConfig, ViewKey, EntityState } from '../../types'
 import { getRelationLabel } from '../../utils/entityHelpers'
+import type { UseFormRegisterReturn } from 'react-hook-form'
 
 interface EntityFieldProps {
   field: FieldConfig
-  value: string
+  registration: UseFormRegisterReturn
+  error?: string
   data?: Record<ViewKey, EntityState>
-  onChange: (value: string) => void
   placeholder?: string
 }
 
-export function EntityField({ field, value, data, onChange, placeholder }: EntityFieldProps) {
+export function EntityField({ field, registration, error, data, placeholder }: EntityFieldProps) {
   const relationRows = field.relation ? data?.[field.relation]?.rows ?? [] : []
   const options = field.relation
     ? relationRows.map((row) => ({
@@ -19,22 +20,25 @@ export function EntityField({ field, value, data, onChange, placeholder }: Entit
       }))
     : field.options?.map((option) => ({ value: option, label: option })) ?? []
 
+  const inputClass = `input-uride ${error ? 'border-red-500 focus:ring-red-500/30 focus:border-red-500' : ''}`
+
   return (
     <div className="space-y-1.5">
-      <label className="label-uride">{field.label}</label>
+      <label className="label-uride flex justify-between">
+        <span>{field.label}</span>
+      </label>
+      
       {field.kind === 'textarea' ? (
         <textarea
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="input-uride min-h-20 resize-y"
+          {...registration}
+          className={`${inputClass} min-h-20 resize-y`}
           placeholder={placeholder ?? `Ingresa ${field.label.toLowerCase()}`}
         />
       ) : field.kind === 'select' ? (
         <div className="relative">
           <select
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-            className="input-uride appearance-none pr-10"
+            {...registration}
+            className={`${inputClass} appearance-none pr-10`}
           >
             <option value="">{placeholder ?? `Seleccionar ${field.label.toLowerCase()}`}</option>
             {options.map((option) => (
@@ -48,11 +52,17 @@ export function EntityField({ field, value, data, onChange, placeholder }: Entit
       ) : (
         <input
           type={field.kind === 'number' || field.kind === 'datetime-local' ? field.kind : 'text'}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="input-uride"
+          {...registration}
+          className={inputClass}
           placeholder={placeholder ?? `Ingresa ${field.label.toLowerCase()}`}
         />
+      )}
+
+      {error && (
+        <div className="flex items-center gap-1 mt-1 text-red-500 text-[10px] font-medium uppercase tracking-wider">
+          <AlertCircle className="w-3 h-3" />
+          <span>{error}</span>
+        </div>
       )}
     </div>
   )

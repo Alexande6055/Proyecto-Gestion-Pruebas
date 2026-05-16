@@ -1,4 +1,6 @@
-import { useState, useMemo, type FormEvent, type ReactNode } from 'react'
+import { useState, useMemo, type ReactNode } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   AlertCircle,
   Loader2,
@@ -20,6 +22,7 @@ import type { AuthSession, EntityState, EntityRow, ViewKey } from '../../types'
 import { normalizeBackendRow } from '../../services'
 import { tripsService } from '../../services'
 import { statusTone } from '../../constants/entities'
+import { tripSchema, type TripFormData } from '../../schemas/tripSchema'
 
 interface TripsViewProps {
   state: EntityState
@@ -54,11 +57,19 @@ const config = {
 }
 
 export function TripsView({ state, data, onCreated }: TripsViewProps) {
-  const [formData, setFormData] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [actionMessage, setActionMessage] = useState('')
   const [detailRow, setDetailRow] = useState<EntityRow | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<TripFormData>({
+    resolver: zodResolver(tripSchema),
+  })
 
   const filteredRows = useMemo(() => {
     const term = ''
@@ -68,17 +79,14 @@ export function TripsView({ state, data, onCreated }: TripsViewProps) {
     )
   }, [state.rows])
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const onFormSubmit = async (formData: TripFormData) => {
     setSaving(true)
     setSaveError('')
     setActionMessage('')
 
     try {
-      const payload = buildPayload(formData)
-
-      await tripsService.create(payload)
-      setFormData({})
+      await tripsService.create(formData)
+      reset()
       onCreated()
       setActionMessage('Viaje creado correctamente.')
     } catch (error) {
@@ -148,15 +156,15 @@ export function TripsView({ state, data, onCreated }: TripsViewProps) {
                 <Badge tone="neutral">{config.key}</Badge>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-5 space-y-4">
+              <form onSubmit={handleSubmit(onFormSubmit)} className="p-5 space-y-4">
                 <div className="space-y-4">
                   {config.fields.map((field) => (
                     <EntityField
                       key={field.key}
                       field={field}
                       data={data}
-                      value={formData[field.key] ?? ''}
-                      onChange={(value) => setFormData((current) => ({ ...current, [field.key]: value }))}
+                      registration={register(field.key as keyof TripFormData)}
+                      error={errors[field.key as keyof TripFormData]?.message}
                     />
                   ))}
                 </div>
@@ -328,24 +336,9 @@ function renderCell(row: EntityRow, column: string): ReactNode {
   return <span className="text-sm text-night-700">{text}</span>
 }
 
-function buildPayload(formData: Record<string, string>) {
-  const payload = Object.fromEntries(
-    Object.entries(formData)
-      .map(([fieldKey, value]) => [fieldKey, value.trim()])
-      .filter(([, value]) => value),
-  ) as Record<string, string | number>
-
-  if (payload.cupos_disponibles) {
-    payload.cupos_disponibles = Number(payload.cupos_disponibles)
-  }
-
-  return payload
-}
-
 function formatCellText(value: EntityRow[string]) {
   if (value && typeof value === 'object') return JSON.stringify(value)
   return String(value ?? '')
 }
 
 export default TripsView
-
