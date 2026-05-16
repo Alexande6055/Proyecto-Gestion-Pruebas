@@ -1,8 +1,9 @@
-import { useEffect, useState, lazy, Suspense, useMemo } from 'react'
+import { lazy, Suspense, useMemo, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 
 // Types
-import type { AuthSession, ViewKey, EntityState } from './types'
+import type { ViewKey, EntityState } from './types'
 
 // Constants
 import { 
@@ -12,12 +13,14 @@ import {
   initialEntityState 
 } from './constants/entities'
 
-// Services
-import { requestJson, normalizeRows, authService } from './services'
-import { usersService, tripsService, requestsService, ratingsService, reportsService, entityService } from './services'
-
 // Components
 import { MainLayout } from './components/layout/MainLayout'
+
+// Hooks & Stores
+import { useAuthStore } from './store/useAuthStore'
+import { useUIStore } from './store/useUIStore'
+import { useBackendStatus } from './hooks/useBackendStatus'
+import { useEntityData } from './hooks/useEntityData'
 
 // Pages (Lazy loading)
 const AuthView = lazy(() => import('./pages/Auth/AuthView'))
@@ -34,31 +37,13 @@ const EntityView = lazy(() => import('./pages/Entity/EntityView'))
 function App() {
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
-  const [session, setSession] = useState<AuthSession | null>(() => {
-    try {
-      const storedSession = localStorage.getItem('uride-session')
-      return storedSession ? JSON.parse(storedSession) as AuthSession : null
-    } catch {
-      return null
-    }
-  })
-
-  const [search, setSearch] = useState('')
-  const [refreshToken, setRefreshToken] = useState(0)
-  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking')
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-
-  const [data, setData] = useState<Record<ViewKey, EntityState>>({
-    dashboard: { rows: [], loading: false, error: '' },
-    users: initialEntityState,
-    trips: initialEntityState,
-    requests: initialEntityState,
-    ratings: initialEntityState,
-    reports: initialEntityState,
-    audit_logs: initialEntityState,
-    profile: initialEntityState,
-  })
+  const { session, setSession, logout } = useAuthStore()
+  const { sidebarOpen, setSidebarOpen, search, setSearch } = useUIStore()
+  
+  const { data: backendStatusResponse } = useBackendStatus()
+  const backendStatus = backendStatusResponse ?? 'checking'
 
   const activeView = useMemo<ViewKey>(() => {
     const path = location.pathname
@@ -74,101 +59,29 @@ function App() {
     ), [isAdmin]
   )
 
-  const loadableViews = useMemo(() => 
-    managedViews.filter((key) =>
-      isAdmin || !['users', 'audit_logs'].includes(key),
-    ), [isAdmin]
-  )
+  // Fetch all managed data (This is for the dashboard summary, can be optimized later)
+  const usersQuery = useEntityData('users', entityConfigs.users.endpoint)
+  const tripsQuery = useEntityData('trips', entityConfigs.trips.endpoint)
+  const requestsQuery = useEntityData('requests', entityConfigs.requests.endpoint)
+  const ratingsQuery = useEntityData('ratings', entityConfigs.ratings.endpoint)
+  const reportsQuery = useEntityData('reports', entityConfigs.reports.endpoint)
+  const auditLogsQuery = useEntityData('audit_logs', entityConfigs.audit_logs.endpoint)
 
-  useEffect(() => {
-    if (!session) return
-
-    let cancelled = false
-
-    async function loadData() {
-      setBackendStatus('checking')
-
-      try {
-        await requestJson<unknown>('/api')
-      } catch {
-        if (cancelled) return
-        setBackendStatus('offline')
-        setData((current) => {
-          const next = { ...current }
-          loadableViews.forEach((key) => {
-            next[key] = {
-              rows: [],
-              loading: false,
-              error: 'Backend no disponible en http://localhost:3000',
-            }
-          })
-          return next
-        })
-        return
-      }
-
-      if (cancelled) return
-      setBackendStatus('online')
-      setData((current) => ({
-        ...current,
-        users: isAdmin ? current.users : { rows: [], loading: false, error: '' },
-        audit_logs: isAdmin ? current.audit_logs : { rows: [], loading: false, error: '' },
-      }))
-
-      await Promise.all(loadableViews.map(async (key) => {
-        const config = entityConfigs[key]
-        setData((current) => ({
-          ...current,
-          [key]: { ...current[key], loading: true, error: '' },
-        }))
-
-        try {
-          let payload: unknown
-
-          if (key === 'users') {
-            payload = await usersService.getAll()
-          } else if (key === 'trips') {
-            payload = await tripsService.getAll()
-          } else if (key === 'requests') {
-            payload = await requestsService.getAll()
-          } else if (key === 'ratings') {
-            payload = await ratingsService.getAll()
-          } else if (key === 'reports') {
-            payload = await reportsService.getAll()
-          } else {
-            payload = await entityService.getAll(config.endpoint)
-          }
-
-          if (cancelled) return
-          setData((current) => ({
-            ...current,
-            [key]: { rows: normalizeRows(payload), loading: false, error: '' },
-          }))
-        } catch (error) {
-          if (cancelled) return
-          setData((current) => ({
-            ...current,
-            [key]: {
-              rows: [],
-              loading: false,
-              error: error instanceof Error ? error.message : 'Error desconocido',
-            },
-          }))
-        }
-      }))
-    }
-
-    void loadData()
-
-    return () => {
-      cancelled = true
-    }
-  }, [refreshToken, session, isAdmin, loadableViews])
+  // Map queries to the data structure expected by views
+  const data = useMemo<Record<ViewKey, EntityState>>(() => ({
+    dashboard: { rows: [], loading: false, error: '' }, // Dashboard processes its own logic usually
+    users: { rows: usersQuery.data ?? [], loading: usersQuery.isLoading, error: usersQuery.error?.message ?? '' },
+    trips: { rows: tripsQuery.data ?? [], loading: tripsQuery.isLoading, error: tripsQuery.error?.message ?? '' },
+    requests: { rows: requestsQuery.data ?? [], loading: requestsQuery.isLoading, error: requestsQuery.error?.message ?? '' },
+    ratings: { rows: ratingsQuery.data ?? [], loading: ratingsQuery.isLoading, error: ratingsQuery.error?.message ?? '' },
+    reports: { rows: reportsQuery.data ?? [], loading: reportsQuery.isLoading, error: reportsQuery.error?.message ?? '' },
+    audit_logs: { rows: auditLogsQuery.data ?? [], loading: auditLogsQuery.isLoading, error: auditLogsQuery.error?.message ?? '' },
+    profile: initialEntityState,
+  }), [usersQuery, tripsQuery, requestsQuery, ratingsQuery, reportsQuery, auditLogsQuery])
 
   // Security: redirect if trying to access unauthorized view
   useEffect(() => {
     if (session && !visibleViews.includes(activeView)) {
-      // Check if it's a valid view at all, if not, it might be a 404
       if (Object.keys(viewLabels).includes(activeView)) {
         navigate('/')
       }
@@ -176,17 +89,15 @@ function App() {
   }, [activeView, session, visibleViews, navigate])
 
   const handleLogout = async () => {
-    try {
-      await authService.logout()
-    } finally {
-      authService.clearSession()
-      setSession(null)
-      setSearch('')
-      navigate('/')
-    }
+    await logout()
+    queryClient.clear()
+    navigate('/')
   }
 
-  const handleCreated = () => setRefreshToken((value) => value + 1)
+  const handleCreated = () => {
+    // Invalidate all entity queries to trigger a refetch
+    queryClient.invalidateQueries({ queryKey: ['entities'] })
+  }
 
   if (!session) {
     return (
@@ -221,7 +132,6 @@ function App() {
           <Route path="/reports" element={<ReportsView state={data.reports} data={data} session={session} onCreated={handleCreated} search={search} />} />
           <Route path="/audit-logs" element={isAdmin ? <AuditLogsView state={data.audit_logs} data={data} session={session} onCreated={handleCreated} search={search} /> : <Navigate to="/" />} />
           
-          {/* Generic entity views for any other managed views that don't have specialized components yet */}
           {managedViews.map(key => {
             const path = `/${key.replace('_', '-')}`
             if (['users', 'trips', 'requests', 'ratings', 'reports', 'audit_logs'].includes(key)) return null
