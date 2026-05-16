@@ -36,6 +36,7 @@ import { Badge, LoadingBadge } from './components/common/Badge'
 import { AuthView } from './pages/Auth/AuthView'
 import { DashboardView } from './pages/Dashboard/DashboardView'
 import { EntityView } from './pages/Entity/EntityView'
+import { TripsView } from './pages/Trips/TripsView'
 import { ProfileView } from './pages/Profile/ProfileView'
 
 const viewIcons: Record<ViewKey, React.ElementType> = {
@@ -194,6 +195,15 @@ function App() {
     ? <DashboardView data={data} />
     : activeView === 'profile'
     ? <ProfileView session={session} onSessionUpdate={setSession} />
+    : activeView === 'trips'
+    ? (
+      <TripsView
+        state={data[activeView]}
+        data={data}
+        session={session}
+        onCreated={() => setRefreshToken((value) => value + 1)}
+      />
+    )
     : (
       <EntityView
         config={entityConfigs[activeView]}
@@ -206,7 +216,7 @@ function App() {
     )
 
   return (
-    <div className="min-h-screen bg-night-50 flex">
+    <div className="h-screen min-h-screen bg-night-50 flex overflow-hidden">
 
       {/* SIDEBAR - LIGHT MODE */}
       <aside 
@@ -275,7 +285,7 @@ function App() {
       </aside>
 
       {/* WORKSPACE */}
-      <section className="flex-1 flex flex-col min-w-0 bg-night-50">
+      <section className="flex-1 flex flex-col min-h-0 min-w-0 bg-night-50">
 
         {/* TOPBAR - LIGHT MODE */}
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-night-100 flex items-center justify-between px-6 sticky top-0 z-30">
@@ -345,7 +355,7 @@ function App() {
         </header>
 
         {/* MAIN CONTENT */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 min-h-0 overflow-y-auto p-6">
           {currentView}
         </main>
       </section>
