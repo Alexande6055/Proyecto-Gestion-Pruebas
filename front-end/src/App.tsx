@@ -38,6 +38,11 @@ import { DashboardView } from './pages/Dashboard/DashboardView'
 import { EntityView } from './pages/Entity/EntityView'
 import { TripsView } from './pages/Trips/TripsView'
 import { ProfileView } from './pages/Profile/ProfileView'
+import { UsersView } from './pages/Users/UsersView'
+import { RequestsView } from './pages/Requests/RequestsView'
+import { RatingsView } from './pages/Ratings/RatingsView'
+import { ReportsView } from './pages/Reports/ReportsView'
+import { AuditLogsView } from './pages/AuditLogs/AuditLogsView'
 
 const viewIcons: Record<ViewKey, React.ElementType> = {
   dashboard: LayoutDashboard,
@@ -191,20 +196,72 @@ function App() {
     return <AuthView onAuthenticated={setSession} />
   }
 
-  const currentView = activeView === 'dashboard'
-    ? <DashboardView data={data} />
-    : activeView === 'profile'
-    ? <ProfileView session={session} onSessionUpdate={setSession} />
-    : activeView === 'trips'
-    ? (
+  let currentView: React.ReactNode
+  if (activeView === 'dashboard') {
+    currentView = <DashboardView data={data} />
+  } else if (activeView === 'profile') {
+    currentView = <ProfileView session={session} onSessionUpdate={setSession} />
+  } else if (activeView === 'trips') {
+    currentView = (
       <TripsView
-        state={data[activeView]}
+        state={data.trips}
         data={data}
         session={session}
         onCreated={() => setRefreshToken((value) => value + 1)}
       />
     )
-    : (
+  } else if (activeView === 'users') {
+    currentView = (
+      <UsersView
+        state={data.users}
+        data={data}
+        session={session}
+        onCreated={() => setRefreshToken((value) => value + 1)}
+        search={search}
+      />
+    )
+  } else if (activeView === 'requests') {
+    currentView = (
+      <RequestsView
+        state={data.requests}
+        data={data}
+        session={session}
+        onCreated={() => setRefreshToken((value) => value + 1)}
+        search={search}
+      />
+    )
+  } else if (activeView === 'ratings') {
+    currentView = (
+      <RatingsView
+        state={data.ratings}
+        data={data}
+        session={session}
+        onCreated={() => setRefreshToken((value) => value + 1)}
+        search={search}
+      />
+    )
+  } else if (activeView === 'reports') {
+    currentView = (
+      <ReportsView
+        state={data.reports}
+        data={data}
+        session={session}
+        onCreated={() => setRefreshToken((value) => value + 1)}
+        search={search}
+      />
+    )
+  } else if (activeView === 'audit_logs') {
+    currentView = (
+      <AuditLogsView
+        state={data.audit_logs}
+        data={data}
+        session={session}
+        onCreated={() => setRefreshToken((value) => value + 1)}
+        search={search}
+      />
+    )
+  } else {
+    currentView = (
       <EntityView
         config={entityConfigs[activeView]}
         state={data[activeView]}
@@ -214,17 +271,18 @@ function App() {
         onCreated={() => setRefreshToken((value) => value + 1)}
       />
     )
+  }
 
   return (
     <div className="h-screen min-h-screen bg-night-50 flex overflow-hidden">
 
       {/* SIDEBAR - LIGHT MODE */}
       <aside 
-        className={`${sidebarOpen ? 'w-64' : 'w-20'} flex-shrink-0 bg-white border-r border-night-100 flex flex-col transition-all duration-300`}
+        className={`${sidebarOpen ? 'w-64' : 'w-20'} shrink-0 bg-white border-r border-night-100 flex flex-col transition-all duration-300`}
       >
         {/* Brand */}
         <div className="h-16 flex items-center gap-3 px-5 border-b border-night-100">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-uride-500 to-uride-600 flex items-center justify-center flex-shrink-0 shadow-uride">
+          <div className="w-9 h-9 rounded-lg bg-linear-to-br from-uride-500 to-uride-600 flex items-center justify-center shrink-0 shadow-uride">
             <Car className="w-5 h-5 text-white" />
           </div>
           {sidebarOpen && (
@@ -251,14 +309,14 @@ function App() {
                     : 'text-night-500 hover:bg-night-50 hover:text-night-700 border-l-2 border-transparent'
                 }`}
               >
-                <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${
+                <Icon className={`w-5 h-5 shrink-0 transition-colors ${
                   isActive ? 'text-uride-500' : 'text-night-400 group-hover:text-night-600'
                 }`} />
                 {sidebarOpen && (
                   <span className="truncate">{viewLabels[key]}</span>
                 )}
                 {isActive && sidebarOpen && (
-                  <ChevronRight className="w-4 h-4 ml-auto text-uride-500 flex-shrink-0" />
+                  <ChevronRight className="w-4 h-4 ml-auto text-uride-500 shrink-0" />
                 )}
               </button>
             )
@@ -334,7 +392,7 @@ function App() {
             {/* User Session */}
             <div className="flex items-center gap-3 pl-4 border-l border-night-200">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-uride-500 to-uride-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-linear-to-br from-uride-500 to-uride-600 flex items-center justify-center">
                   <UserCircle className="w-5 h-5 text-white" />
                 </div>
                 <div className="hidden md:block">

@@ -96,7 +96,7 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-uride overflow-hidden shadow-night-xl border border-night-200">
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-uride-500 to-uride-700 p-8 sm:p-12 lg:p-16 flex flex-col justify-between text-white relative overflow-hidden">
+        <section className="bg-linear-to-br from-uride-500 to-uride-700 p-8 sm:p-12 lg:p-16 flex flex-col justify-between text-white relative overflow-hidden">
           {/* Decorative wave */}
           <div className="absolute inset-0 opacity-10 pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -328,7 +328,7 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
             {/* Messages */}
             {message && (
               <div className="alert-uride-info flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-info-700 flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-info-700 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-bold text-info-900 text-sm mb-0.5">Accion completada</p>
                   <p className="text-info-900 text-sm">{message}</p>
@@ -337,7 +337,7 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
             )}
             {error && (
               <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-uride-xs flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-bold text-red-900 text-sm mb-0.5">Error</p>
                   <p className="text-red-800 text-sm">{error}</p>

@@ -3,7 +3,6 @@ import {
   AlertCircle,
   Loader2,
   Save,
-  X,
   Eye,
   CheckCircle2,
   Search,
@@ -12,7 +11,12 @@ import {
 } from 'lucide-react'
 import { Badge } from '../../components/common/Badge'
 import { EmptyState } from '../../components/common/EmptyState'
-import type { AuthSession, EntityState, EntityRow, FieldConfig, ViewKey } from '../../types'
+import { EntityHeader } from '../../components/page/EntityHeader'
+import { EntityMessages } from '../../components/page/EntityMessages'
+import { EntityField } from '../../components/page/EntityField'
+import { EntityTable } from '../../components/page/EntityTable'
+import { EntityDetailModal } from '../../components/page/EntityDetailModal'
+import type { AuthSession, EntityState, EntityRow, ViewKey } from '../../types'
 import { normalizeBackendRow } from '../../services'
 import { tripsService } from '../../services'
 import { statusTone } from '../../constants/entities'
@@ -49,7 +53,7 @@ const config = {
   ],
 }
 
-export function TripsView({ state, data,  onCreated }: TripsViewProps) {
+export function TripsView({ state, data, onCreated }: TripsViewProps) {
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -114,50 +118,17 @@ export function TripsView({ state, data,  onCreated }: TripsViewProps) {
   return (
     <div className="min-h-screen bg-night-50 pb-12">
       {/* HEADER */}
-      <header className="bg-white border-b border-night-200 px-6 sm:px-8 lg:px-12 py-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-uride-xs bg-gradient-to-br from-uride-50 to-uride-100 flex items-center justify-center shadow-night">
-                <Database className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-uride-600 uppercase tracking-widest">Módulo</span>
-                  <Badge tone={state.error ? 'danger' : state.loading ? 'info' : 'ok'}>
-                    {state.error ? 'sin conexión' : state.loading ? 'cargando' : 'conectado'}
-                  </Badge>
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-night-900 tracking-tight">{config.title}</h1>
-                <p className="text-sm text-night-500 mt-0.5">{config.subtitle}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-night-400 bg-night-50 px-4 py-2 rounded-uride-xs">
-              <Database className="w-3.5 h-3.5" />
-              <span className="font-mono">{config.endpoint}</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      <EntityHeader
+        icon={<Database className="w-5 h-5 text-blue-600" />}
+        title={config.title}
+        subtitle={config.subtitle}
+        endpoint={config.endpoint}
+        statusText={state.error ? 'sin conexión' : state.loading ? 'cargando' : 'conectado'}
+        statusTone={state.error ? 'danger' : state.loading ? 'info' : 'ok'}
+      />
 
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-        {/* MESSAGES */}
-        {(actionMessage || saveError) && (
-          <div className="mb-6 space-y-3">
-            {actionMessage && (
-              <div className="alert-uride-info flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-info-700 flex-shrink-0" />
-                <span className="font-medium">{actionMessage}</span>
-              </div>
-            )}
-            {saveError && (
-              <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-uride-xs flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                <span className="text-red-900 text-sm font-medium">{saveError}</span>
-              </div>
-            )}
-          </div>
-        )}
+        <EntityMessages actionMessage={actionMessage} saveError={saveError} />
 
         {/* MAIN GRID */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
@@ -166,7 +137,7 @@ export function TripsView({ state, data,  onCreated }: TripsViewProps) {
             <div className="card-uride sticky top-24">
               <div className="flex items-center justify-between px-6 py-4 border-b border-night-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-uride-100 to-uride-200 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-linear-to-br from-uride-100 to-uride-200 flex items-center justify-center">
                     <Plus className="w-4 h-4 text-uride-600" />
                   </div>
                   <div>
@@ -180,7 +151,7 @@ export function TripsView({ state, data,  onCreated }: TripsViewProps) {
               <form onSubmit={handleSubmit} className="p-5 space-y-4">
                 <div className="space-y-4">
                   {config.fields.map((field) => (
-                    <Field
+                    <EntityField
                       key={field.key}
                       field={field}
                       data={data}
@@ -218,7 +189,7 @@ export function TripsView({ state, data,  onCreated }: TripsViewProps) {
             <div className="card-uride">
               <div className="flex items-center justify-between px-6 py-4 border-b border-night-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-night-100 to-night-200 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-linear-to-br from-night-100 to-night-200 flex items-center justify-center">
                     <Search className="w-4 h-4 text-night-600" />
                   </div>
                   <div>
@@ -263,12 +234,23 @@ export function TripsView({ state, data,  onCreated }: TripsViewProps) {
                 )}
                 {!state.loading && !state.error && Boolean(filteredRows.length) && (
                   <div className="overflow-x-auto">
-                    <TripsTable
+                    <EntityTable
                       columns={config.columns}
+                      columnLabels={Object.fromEntries(config.columns.map((c) => {
+                        const found = config.fields.find((f) => f.key === c)
+                        const label = found?.label ?? c.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase())
+                        return [c, label]
+                      }))}
                       rows={filteredRows}
-                      data={data}
-                      onViewTrip={handleViewTrip}
-                      onCompleteTrip={handleCompleteTrip}
+                      renderCell={renderCell}
+                      renderActions={(row) => (
+                        <TripRowActions
+                          row={row}
+                          onViewTrip={handleViewTrip}
+                          onCompleteTrip={handleCompleteTrip}
+                        />
+                      )}
+                      showActions
                     />
                   </div>
                 )}
@@ -280,127 +262,23 @@ export function TripsView({ state, data,  onCreated }: TripsViewProps) {
 
       {/* DETAIL MODAL */}
       {detailRow && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-night-900/40 backdrop-blur-sm">
-          <div className="card-uride w-full max-w-2xl max-h-[80vh] overflow-auto animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-night-100 sticky top-0 bg-white z-10">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                  <Eye className="w-4 h-4 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-night-900">Detalle de viaje</h2>
-                  <p className="text-[10px] text-night-400 uppercase tracking-wider">ID: {String(detailRow.id ?? 'N/A')}</p>
-                </div>
+        <EntityDetailModal
+          title="Detalle de viaje"
+          subtitle={`ID: ${String(detailRow.id ?? 'N/A')}`}
+          icon={<Eye className="w-4 h-4 text-blue-600" />}
+          onClose={() => setDetailRow(null)}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {Object.entries(detailRow).map(([key, value]) => (
+              <div key={key} className="bg-night-50 rounded-uride-xs p-3">
+                <span className="text-[10px] font-bold text-night-400 uppercase tracking-wider block mb-1">{key}</span>
+                <span className="text-sm font-semibold text-night-900">{formatCellText(value)}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setDetailRow(null)}
-                className="p-2 rounded-uride-xs hover:bg-night-100 transition-colors"
-              >
-                <X className="w-5 h-5 text-night-500" />
-              </button>
-            </div>
-            <div className="p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {Object.entries(detailRow).map(([key, value]) => (
-                  <div key={key} className="bg-night-50 rounded-uride-xs p-3">
-                    <span className="text-[10px] font-bold text-night-400 uppercase tracking-wider block mb-1">{key}</span>
-                    <span className="text-sm font-semibold text-night-900">{formatCellText(value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function Field({
-  field,
-  value,
-  onChange,
-}: {
-  field: FieldConfig
-  data: Record<ViewKey, EntityState>
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label className="label-uride">{field.label}</label>
-      {field.kind === 'textarea' ? (
-        <textarea
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="input-uride min-h-[80px] resize-y"
-          placeholder={`Ingresa ${field.label.toLowerCase()}`}
-        />
-      ) : (
-        <input
-          type={field.kind === 'number' || field.kind === 'datetime-local' ? field.kind : 'text'}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="input-uride"
-          placeholder={`Ingresa ${field.label.toLowerCase()}`}
-        />
-      )}
-    </div>
-  )
-}
-
-function TripsTable({
-  columns,
-  rows,
-  onViewTrip,
-  onCompleteTrip,
-}: {
-  columns: string[]
-  rows: EntityRow[]
-  data: Record<ViewKey, EntityState>
-  onViewTrip: (row: EntityRow) => void
-  onCompleteTrip: (row: EntityRow) => void
-}) {
-  return (
-    <table className="w-full">
-      <thead>
-        <tr className="border-b border-night-100">
-          {columns.map((column) => (
-            <th
-              key={column}
-              className="text-left px-4 py-3 text-[10px] font-bold text-night-400 uppercase tracking-wider"
-            >
-              {column}
-            </th>
-          ))}
-          <th className="text-right px-4 py-3 text-[10px] font-bold text-night-400 uppercase tracking-wider">
-            acciones
-          </th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-night-100">
-        {rows.map((row) => (
-          <tr
-            key={String(row.id ?? JSON.stringify(row))}
-            className="hover:bg-uride-50/30 transition-colors duration-150"
-          >
-            {columns.map((column) => (
-              <td key={column} className="px-4 py-3">
-                {renderCell(row, column)}
-              </td>
             ))}
-            <td className="px-4 py-3">
-              <TripRowActions
-                row={row}
-                onViewTrip={onViewTrip}
-                onCompleteTrip={onCompleteTrip}
-              />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+          </div>
+        </EntityDetailModal>
+      )}
+    </div>
   )
 }
 
