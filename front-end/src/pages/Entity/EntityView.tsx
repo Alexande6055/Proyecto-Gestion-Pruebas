@@ -1,6 +1,7 @@
 import { useState, useMemo, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
 import { 
   BadgeCheck, 
   AlertCircle, 
@@ -20,7 +21,6 @@ import {
 import { Badge } from '../../components/common/Badge'
 import { EmptyState } from '../../components/common/EmptyState'
 import { EntityHeader } from '../../components/page/EntityHeader'
-import { EntityMessages } from '../../components/page/EntityMessages'
 import { EntityField } from '../../components/page/EntityField'
 import { EntityTable } from '../../components/page/EntityTable'
 import { EntityDetailModal } from '../../components/page/EntityDetailModal'
@@ -46,9 +46,7 @@ interface EntityViewProps {
 
 export function EntityView({ config, state, data, search, session, onCreated, ui }: EntityViewProps) {
   const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState('')
   const [editingUserId, setEditingUserId] = useState('')
-  const [actionMessage, setActionMessage] = useState('')
   const [detailRow, setDetailRow] = useState<EntityRow | null>(null)
 
   // Determine which schema to use
@@ -78,8 +76,6 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
 
   const onFormSubmit = async (formData: any) => {
     setSaving(true)
-    setSaveError('')
-    setActionMessage('')
 
     try {
       const payload = buildPayload(config.key, formData, Boolean(editingUserId))
@@ -88,32 +84,32 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
       if (config.key === 'users') {
         if (isEditingUser) {
           await usersService.update(editingUserId, payload)
-          setActionMessage('Usuario actualizado correctamente.')
+          toast.success('Usuario actualizado correctamente.')
         } else {
           await usersService.create(payload)
-          setActionMessage('Usuario creado correctamente.')
+          toast.success('Usuario creado correctamente.')
         }
       } else if (config.key === 'trips') {
         if (!isEditingUser) {
           await tripsService.create(payload)
-          setActionMessage('Viaje creado correctamente.')
+          toast.success('Viaje creado correctamente.')
         }
       } else if (config.key === 'requests') {
         await requestsService.create(payload)
-        setActionMessage('Solicitud creada correctamente.')
+        toast.success('Solicitud creada correctamente.')
       } else if (config.key === 'ratings') {
         await (await import('../../services')).ratingsService.create(payload)
-        setActionMessage('Calificación creada correctamente.')
+        toast.success('Calificación creada correctamente.')
       } else if (config.key === 'reports') {
         await (await import('../../services')).reportsService.create(payload)
-        setActionMessage('Reporte creado correctamente.')
+        toast.success('Reporte creado correctamente.')
       }
 
       reset()
       setEditingUserId('')
       onCreated()
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'No se pudo guardar')
+      toast.error(error instanceof Error ? error.message : 'No se pudo guardar')
     } finally {
       setSaving(false)
     }
@@ -123,8 +119,6 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
     const userId = String(row.id ?? '')
     setEditingUserId(userId)
     setDetailRow(null)
-    setActionMessage('')
-    setSaveError('')
     
     // Fill form with user data
     const fields: (keyof UserFormData)[] = [
@@ -147,48 +141,36 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
     const newPassword = window.prompt(`Nueva contraseña para ${row.nombre ?? row.correo_institucional ?? 'usuario'}`)
     if (!newPassword) return
 
-    setActionMessage('')
-    setSaveError('')
-
     try {
       await usersService.resetPassword(row.id as string | number, newPassword)
-      setActionMessage('Contraseña actualizada correctamente.')
+      toast.success('Contraseña actualizada correctamente.')
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'No se pudo actualizar la contraseña')
+      toast.error(error instanceof Error ? error.message : 'No se pudo actualizar la contraseña')
     }
   }
 
   const handleViewTrip = async (row: EntityRow) => {
-    setActionMessage('')
-    setSaveError('')
-
     try {
       const detail = await tripsService.getById(row.id as string | number)
       setDetailRow(normalizeBackendRow(detail))
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'No se pudo consultar el viaje')
+      toast.error(error instanceof Error ? error.message : 'No se pudo consultar el viaje')
     }
   }
 
   const handleCompleteTrip = async (row: EntityRow) => {
     if (!window.confirm('¿Finalizar este viaje?')) return
 
-    setActionMessage('')
-    setSaveError('')
-
     try {
       await tripsService.complete(row.id as string | number)
-      setActionMessage('Viaje finalizado correctamente.')
+      toast.success('Viaje finalizado correctamente.')
       onCreated()
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'No se pudo finalizar el viaje')
+      toast.error(error instanceof Error ? error.message : 'No se pudo finalizar el viaje')
     }
   }
 
   const handleRequestStatus = async (row: EntityRow, estado: 'aceptada' | 'rechazada') => {
-    setActionMessage('')
-    setSaveError('')
-
     const trip = data.trips.rows.find((item) => String(item.id) === String(row.viaje_id))
 
     try {
@@ -201,17 +183,16 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
         conductor_id: validConductorId,
         estado,
       })
-      setActionMessage(`Solicitud ${estado}.`)
+      toast.success(`Solicitud ${estado}.`)
       onCreated()
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'No se pudo actualizar la solicitud')
+      toast.error(error instanceof Error ? error.message : 'No se pudo actualizar la solicitud')
     }
   }
 
   const cancelEdit = () => {
     setEditingUserId('')
     reset()
-    setSaveError('')
   }
 
   const formTitle = editingUserId ? 'Editar usuario' : 'Crear nuevo registro'
@@ -240,8 +221,6 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
       />
 
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-        <EntityMessages actionMessage={actionMessage} saveError={saveError} />
-
         {/* MAIN GRID */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           {/* FORM PANEL */}

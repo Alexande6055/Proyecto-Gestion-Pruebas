@@ -1,6 +1,7 @@
-import { useState, useMemo, type ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
 import {
   AlertCircle,
   Loader2,
@@ -14,7 +15,6 @@ import {
 import { Badge } from '../../components/common/Badge'
 import { EmptyState } from '../../components/common/EmptyState'
 import { EntityHeader } from '../../components/page/EntityHeader'
-import { EntityMessages } from '../../components/page/EntityMessages'
 import { EntityField } from '../../components/page/EntityField'
 import { EntityTable } from '../../components/page/EntityTable'
 import { EntityDetailModal } from '../../components/page/EntityDetailModal'
@@ -23,6 +23,7 @@ import { normalizeBackendRow } from '../../services'
 import { tripsService } from '../../services'
 import { statusTone } from '../../constants/entities'
 import { tripSchema, type TripFormData } from '../../schemas/tripSchema'
+import { useState } from 'react'
 
 interface TripsViewProps {
   state: EntityState
@@ -58,8 +59,6 @@ const config = {
 
 export function TripsView({ state, data, onCreated }: TripsViewProps) {
   const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState('')
-  const [actionMessage, setActionMessage] = useState('')
   const [detailRow, setDetailRow] = useState<EntityRow | null>(null)
 
   const {
@@ -81,45 +80,37 @@ export function TripsView({ state, data, onCreated }: TripsViewProps) {
 
   const onFormSubmit = async (formData: TripFormData) => {
     setSaving(true)
-    setSaveError('')
-    setActionMessage('')
 
     try {
       await tripsService.create(formData)
       reset()
       onCreated()
-      setActionMessage('Viaje creado correctamente.')
+      toast.success('Viaje creado correctamente.')
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'No se pudo guardar')
+      toast.error(error instanceof Error ? error.message : 'No se pudo guardar')
     } finally {
       setSaving(false)
     }
   }
 
   const handleViewTrip = async (row: EntityRow) => {
-    setActionMessage('')
-    setSaveError('')
-
     try {
       const detail = await tripsService.getById(row.id as string | number)
       setDetailRow(normalizeBackendRow(detail))
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'No se pudo consultar el viaje')
+      toast.error(error instanceof Error ? error.message : 'No se pudo consultar el viaje')
     }
   }
 
   const handleCompleteTrip = async (row: EntityRow) => {
     if (!window.confirm('¿Finalizar este viaje?')) return
 
-    setActionMessage('')
-    setSaveError('')
-
     try {
       await tripsService.complete(row.id as string | number)
-      setActionMessage('Viaje finalizado correctamente.')
+      toast.success('Viaje finalizado correctamente.')
       onCreated()
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'No se pudo finalizar el viaje')
+      toast.error(error instanceof Error ? error.message : 'No se pudo finalizar el viaje')
     }
   }
 
@@ -136,8 +127,6 @@ export function TripsView({ state, data, onCreated }: TripsViewProps) {
       />
 
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-        <EntityMessages actionMessage={actionMessage} saveError={saveError} />
-
         {/* MAIN GRID */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           {/* FORM PANEL */}
@@ -163,7 +152,12 @@ export function TripsView({ state, data, onCreated }: TripsViewProps) {
                       key={field.key}
                       field={field}
                       data={data}
-                      registration={register(field.key as keyof TripFormData)}
+                      registration={register(
+                        field.key as keyof TripFormData,
+                        field.kind === 'number'
+                            ? { valueAsNumber: true }
+                            : undefined
+                        )}
                       error={errors[field.key as keyof TripFormData]?.message}
                     />
                   ))}
