@@ -117,7 +117,7 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
     <div className="max-w-5xl mx-auto space-y-6">
 
       {/* HEADER */}
-      <section className="relative overflow-hidden rounded-uride bg-gradient-to-r from-uride-500 to-uride-700 p-8 text-white">
+      <section className="relative overflow-hidden rounded-uride bg-linear-to-r from-uride-500 to-uride-700 p-8 text-white">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
         </div>
@@ -367,7 +367,7 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
               <button 
                 type="submit" 
                 disabled={passwordLoading}
-                className="btn-uride-primary w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 shadow-none hover:shadow-lg"
+                className="btn-uride-primary w-full sm:w-auto bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 shadow-none hover:shadow-lg"
               >
                 {passwordLoading ? (
                   <span className="flex items-center gap-2">
@@ -399,7 +399,7 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
 
             <div className="p-6 space-y-4">
               <div className="flex items-start gap-3 p-3 rounded-uride-xs bg-night-50">
-                <Mail className="w-5 h-5 text-uride-500 mt-0.5 flex-shrink-0" />
+                <Mail className="w-5 h-5 text-uride-500 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-xs font-semibold text-night-500 uppercase tracking-wider">Correo Institucional</p>
                   <p className="text-sm font-semibold text-night-900 mt-0.5">{session.user.email}</p>
@@ -407,7 +407,7 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
               </div>
 
               <div className="flex items-start gap-3 p-3 rounded-uride-xs bg-night-50">
-                <Shield className="w-5 h-5 text-uride-500 mt-0.5 flex-shrink-0" />
+                <Shield className="w-5 h-5 text-uride-500 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-xs font-semibold text-night-500 uppercase tracking-wider">Rol en el Sistema</p>
                   <div className="mt-1">
@@ -419,7 +419,7 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
               </div>
 
               <div className="flex items-start gap-3 p-3 rounded-uride-xs bg-night-50">
-                <CheckCircle2 className="w-5 h-5 text-uride-500 mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="w-5 h-5 text-uride-500 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-xs font-semibold text-night-500 uppercase tracking-wider">Estado</p>
                   <div className="mt-1">
@@ -440,15 +440,15 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
             </div>
             <div className="p-6 space-y-3">
               <div className="flex items-start gap-2 text-sm text-night-600">
-                <CheckCircle2 className="w-4 h-4 text-uride-500 mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-uride-500 mt-0.5 shrink-0" />
                 <span>Usa una contrasena de al menos 8 caracteres</span>
               </div>
               <div className="flex items-start gap-2 text-sm text-night-600">
-                <CheckCircle2 className="w-4 h-4 text-uride-500 mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-uride-500 mt-0.5 shrink-0" />
                 <span>Combina letras, numeros y simbolos</span>
               </div>
               <div className="flex items-start gap-2 text-sm text-night-600">
-                <CheckCircle2 className="w-4 h-4 text-uride-500 mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-uride-500 mt-0.5 shrink-0" />
                 <span>No compartas tu contrasena con nadie</span>
               </div>
             </div>
@@ -458,3 +458,5 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
     </div>
   )
 }
+
+export default ProfileView

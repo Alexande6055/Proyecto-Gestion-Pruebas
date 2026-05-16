@@ -14,8 +14,6 @@ import {
   Route,
   ChevronRight,
   Loader2,
-  Bell,
-  Search,
   Filter
 } from 'lucide-react'
 
@@ -56,12 +54,12 @@ export function DashboardView({ data }: DashboardViewProps) {
   return (
     <div className="min-h-screen bg-night-50">
 
-      {/* TOP NAVIGATION BAR */}
+      {/* TOP NAVIGATION BAR 
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-night-200">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-uride-xs bg-gradient-to-br from-uride-500 to-uride-600 flex items-center justify-center shadow-uride">
+              <div className="w-9 h-9 rounded-uride-xs bg-linear-to-br from-uride-500 to-uride-600 flex items-center justify-center shadow-uride">
                 <Car className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -92,6 +90,7 @@ export function DashboardView({ data }: DashboardViewProps) {
           </div>
         </div>
       </nav>
+      */}
 
       {/* HERO PANEL - Modo Claro */}
       <section className="relative overflow-hidden bg-white border-b border-night-200 px-6 py-10 sm:px-8 lg:px-12">
@@ -146,7 +145,7 @@ export function DashboardView({ data }: DashboardViewProps) {
           {/* Users Stat */}
           <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300">
             <div className="flex items-start justify-between mb-3">
-              <div className="w-11 h-11 rounded-uride-xs bg-gradient-to-br from-uride-50 to-uride-100 flex items-center justify-center shadow-night">
+              <div className="w-11 h-11 rounded-uride-xs bg-linear-to-br from-uride-50 to-uride-100 flex items-center justify-center shadow-night">
                 <Users className="w-5 h-5 text-uride-600" />
               </div>
               <span className="badge-uride">Usuarios</span>
@@ -160,14 +159,14 @@ export function DashboardView({ data }: DashboardViewProps) {
             </div>
             <p className="text-sm text-night-500 mt-1">Registros activos en el sistema</p>
             <div className="mt-3 h-1.5 bg-night-100 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-uride-400 to-uride-500 rounded-full" style={{ width: '75%' }} />
+              <div className="h-full bg-linear-to-r from-uride-400 to-uride-500 rounded-full" style={{ width: '75%' }} />
             </div>
           </div>
 
           {/* Active Trips Stat */}
           <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300">
             <div className="flex items-start justify-between mb-3">
-              <div className="w-11 h-11 rounded-uride-xs bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-night">
+              <div className="w-11 h-11 rounded-uride-xs bg-linear-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-night">
                 <Route className="w-5 h-5 text-blue-600" />
               </div>
               <span className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold uppercase tracking-wider rounded-full">
@@ -191,7 +190,7 @@ export function DashboardView({ data }: DashboardViewProps) {
           {/* Pending Requests Stat */}
           <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300">
             <div className="flex items-start justify-between mb-3">
-              <div className="w-11 h-11 rounded-uride-xs bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center shadow-night">
+              <div className="w-11 h-11 rounded-uride-xs bg-linear-to-br from-amber-50 to-amber-100 flex items-center justify-center shadow-night">
                 <Clock className="w-5 h-5 text-amber-600" />
               </div>
               <span className="inline-flex items-center px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wider rounded-full">
@@ -217,7 +216,7 @@ export function DashboardView({ data }: DashboardViewProps) {
           {/* Rating Stat */}
           <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300">
             <div className="flex items-start justify-between mb-3">
-              <div className="w-11 h-11 rounded-uride-xs bg-gradient-to-br from-yellow-50 to-yellow-100 flex items-center justify-center shadow-night">
+              <div className="w-11 h-11 rounded-uride-xs bg-linear-to-br from-yellow-50 to-yellow-100 flex items-center justify-center shadow-night">
                 <Star className="w-5 h-5 text-yellow-600 fill-yellow-500" />
               </div>
               <span className="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold uppercase tracking-wider rounded-full">
@@ -253,7 +252,7 @@ export function DashboardView({ data }: DashboardViewProps) {
           <div className="card-uride hover:shadow-night-xl transition-shadow duration-300">
             <div className="flex items-center justify-between px-6 py-5 border-b border-night-100">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-uride-100 to-uride-200 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-linear-to-br from-uride-100 to-uride-200 flex items-center justify-center">
                   <Car className="w-4 h-4 text-uride-600" />
                 </div>
                 <div>
@@ -278,17 +277,17 @@ export function DashboardView({ data }: DashboardViewProps) {
                       className="group flex items-center gap-4 p-3 rounded-uride-xs hover:bg-uride-50/60 transition-all duration-200 cursor-pointer"
                     >
                       {/* Trip number indicator */}
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-night-100 to-night-200 flex items-center justify-center text-xs font-bold text-night-600">
+                      <div className="shrink-0 w-8 h-8 rounded-full bg-linear-to-br from-night-100 to-night-200 flex items-center justify-center text-xs font-bold text-night-600">
                         {index + 1}
                       </div>
 
                       {/* Trip details */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 text-sm font-bold text-night-900">
-                          <MapPin className="w-3.5 h-3.5 text-uride-500 flex-shrink-0" />
+                          <MapPin className="w-3.5 h-3.5 text-uride-500 shrink-0" />
                           <span className="truncate">{String(trip.origen_zona ?? 'Sin origen')}</span>
-                          <ArrowRight className="w-3.5 h-3.5 text-night-300 flex-shrink-0" />
-                          <MapPin className="w-3.5 h-3.5 text-uride-600 flex-shrink-0" />
+                          <ArrowRight className="w-3.5 h-3.5 text-night-300 shrink-0" />
+                          <MapPin className="w-3.5 h-3.5 text-uride-600 shrink-0" />
                           <span className="truncate">{String(trip.destino_zona ?? 'Sin destino')}</span>
                         </div>
                         <div className="flex items-center gap-3 mt-1.5 text-xs text-night-500">
@@ -308,7 +307,7 @@ export function DashboardView({ data }: DashboardViewProps) {
                       </div>
 
                       {/* Arrow indicator */}
-                      <ChevronRight className="w-4 h-4 text-night-300 group-hover:text-uride-500 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-night-300 group-hover:text-uride-500 group-hover:translate-x-0.5 transition-all shrink-0" />
                     </article>
                   ))}
                 </div>
@@ -336,7 +335,7 @@ export function DashboardView({ data }: DashboardViewProps) {
           <div className="card-uride hover:shadow-night-xl transition-shadow duration-300">
             <div className="flex items-center justify-between px-6 py-5 border-b border-night-100">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-100 to-red-200 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-linear-to-br from-red-100 to-red-200 flex items-center justify-center">
                   <MessageSquare className="w-4 h-4 text-red-600" />
                 </div>
                 <div>
@@ -356,7 +355,7 @@ export function DashboardView({ data }: DashboardViewProps) {
                       className="group flex items-start gap-3 p-3 rounded-uride-xs hover:bg-red-50/40 transition-all duration-200 cursor-pointer"
                     >
                       {/* Status indicator */}
-                      <div className={`flex-shrink-0 w-2.5 h-2.5 mt-2 rounded-full ${
+                      <div className={`shrink-0 w-2.5 h-2.5 mt-2 rounded-full ${
                         report.estado === 'resuelto' ? 'bg-uride-500' : 'bg-red-500 animate-pulse'
                       }`} />
 
@@ -410,7 +409,7 @@ export function DashboardView({ data }: DashboardViewProps) {
         <div className="card-uride p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-info-100 to-info-200 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-lg bg-linear-to-br from-info-100 to-info-200 flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 text-info-700" />
               </div>
               <div>
@@ -457,7 +456,7 @@ export function DashboardView({ data }: DashboardViewProps) {
                   <div className="text-2xl font-extrabold text-night-900 mb-2">{item.count}</div>
                   <div className="h-2 bg-night-200 rounded-full overflow-hidden">
                     <div 
-                      className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-1000`}
+                      className={`h-full bg-linear-to-r ${item.color} rounded-full transition-all duration-1000`}
                       style={{ width: `${Math.max(percentage, 5)}%` }}
                     />
                   </div>
@@ -470,7 +469,7 @@ export function DashboardView({ data }: DashboardViewProps) {
 
       {/* QUICK ACTIONS BAR - Modo Claro */}
       <section className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pb-12">
-        <div className="card-uride p-6 bg-gradient-to-r from-night-800 to-night-900">
+        <div className="card-uride p-6 bg-linear-to-r from-night-800 to-night-900">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-uride-xs bg-uride-500/20 flex items-center justify-center">
@@ -515,3 +514,5 @@ export function DashboardView({ data }: DashboardViewProps) {
     </div>
   )
 }
+
+export default DashboardView

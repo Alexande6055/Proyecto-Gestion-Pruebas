@@ -57,7 +57,7 @@
 /* ─── BOTONES ─── */
 .btn-uride-primary {
   @apply inline-flex items-center justify-center px-8 py-3.5 
-         bg-gradient-to-r from-uride-500 to-uride-600 
+     bg-linear-to-r from-uride-500 to-uride-600 
          text-white font-bold text-base rounded-uride-sm
          shadow-uride hover:shadow-uride-lg
          hover:from-uride-400 hover:to-uride-500
@@ -103,7 +103,7 @@
 }
 
 .card-uride-featured {
-  @apply bg-gradient-to-br from-uride-500 to-uride-600 
+  @apply bg-linear-to-br from-uride-500 to-uride-600 
          rounded-uride shadow-uride-lg overflow-hidden text-white;
 }
 
@@ -167,7 +167,7 @@
 
 /* ─── SECCIONES ─── */
 .section-uride-dark {
-  @apply bg-gradient-to-br from-night-900 to-night-800 
+  @apply bg-linear-to-br from-night-900 to-night-800 
          py-16 px-4 sm:px-6 lg:px-8;
 }
 
@@ -181,7 +181,7 @@
 
 /* ─── TIPOGRAFÍA ─── */
 .text-gradient-uride {
-  @apply bg-gradient-to-r from-uride-500 to-uride-600 
+  @apply bg-linear-to-r from-uride-500 to-uride-600 
          bg-clip-text text-transparent font-extrabold;
 }
 
@@ -221,12 +221,12 @@
 
 /* ─── HEADER / NAV ─── */
 .header-uride {
-  @apply bg-gradient-to-r from-uride-500 to-uride-600 
+  @apply bg-linear-to-r from-uride-500 to-uride-600 
          px-6 py-8 text-center text-white;
 }
 
 .header-uride-dark {
-  @apply bg-gradient-to-r from-night-900 to-night-800 
+  @apply bg-linear-to-r from-night-900 to-night-800 
          px-6 py-8 text-center text-white border-b border-night-700;
 }
 

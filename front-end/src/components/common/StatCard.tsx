@@ -50,7 +50,7 @@ export function StatCard({
       {progress !== undefined && (
         <div className="mt-3 h-1.5 bg-night-100 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-uride-400 to-uride-500 rounded-full transition-all duration-700"
+            className="h-full bg-linear-to-r from-uride-400 to-uride-500 rounded-full transition-all duration-700"
             style={{ width: `${Math.max(progress, 3)}%` }}
           />
         </div>

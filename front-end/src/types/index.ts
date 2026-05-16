@@ -31,6 +31,13 @@ export type EntityState = {
   error: string
 }
 
+export type PageUi = {
+  title?: string
+  subtitle?: string
+  fieldLabels?: Record<string, string>
+  fieldPlaceholders?: Record<string, string>
+}
+
 export type AuthMode = 'login' | 'register' | 'recover' | 'reset'
 
 export type AuthSession = {
