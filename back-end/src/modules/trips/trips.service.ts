@@ -20,11 +20,13 @@ export class TripsService {
     return this.tripsRepository.save(trip);
   }
 
-  async findAll(filters: { zona?: string; fecha?: string }): Promise<Trip[]> {
+  async findAll(filters: { zona?: string; fecha?: string; estado?: TripStatus }): Promise<Trip[]> {
     const query = this.tripsRepository.createQueryBuilder('trip')
-      .leftJoinAndSelect('trip.conductor', 'conductor')
-      .where('trip.estado = :estado', { estado: TripStatus.ABIERTO })
-      .andWhere('trip.cupos_disponibles > 0');
+      .leftJoinAndSelect('trip.conductor', 'conductor');
+
+    if (filters.estado) {
+      query.andWhere('trip.estado = :estado', { estado: filters.estado });
+    }
 
     if (filters.zona) {
       query.andWhere(
@@ -35,9 +37,10 @@ export class TripsService {
 
     if (filters.fecha) {
       query.andWhere('trip.fecha_hora::date = :fecha', { fecha: filters.fecha });
-    } else {
-      query.andWhere('trip.fecha_hora > :now', { now: new Date() });
     }
+
+    // Ordenar por fecha más cercana
+    query.orderBy('trip.fecha_hora', 'ASC');
 
     return query.getMany();
   }
@@ -53,13 +56,49 @@ export class TripsService {
     return trip;
   }
 
+  async update(id: string, updateTripDto: Partial<CreateTripDto>, conductorId: string): Promise<Trip> {
+    const trip = await this.findOne(id);
+    if (trip.conductorId !== conductorId) {
+      throw new BadRequestException('Solo el conductor puede editar el viaje');
+    }
+    if (trip.estado !== TripStatus.ABIERTO) {
+      throw new BadRequestException('No se puede editar un viaje que ya no está abierto');
+    }
+    Object.assign(trip, updateTripDto);
+    return this.tripsRepository.save(trip);
+  }
+
+  async remove(id: string, conductorId: string): Promise<void> {
+    const trip = await this.findOne(id);
+    if (trip.conductorId !== conductorId) {
+      throw new BadRequestException('Solo el conductor puede eliminar el viaje');
+    }
+    if (trip.estado !== TripStatus.ABIERTO && trip.estado !== TripStatus.COMPLETO) {
+      throw new BadRequestException('No se puede eliminar un viaje en curso o finalizado');
+    }
+    await this.tripsRepository.remove(trip);
+  }
+
+  async startTrip(tripId: string, conductorId: string): Promise<Trip> {
+    const trip = await this.findOne(tripId);
+    if (trip.conductorId !== conductorId) {
+      throw new BadRequestException('Solo el conductor puede iniciar el viaje');
+    }
+    if (trip.estado !== TripStatus.ABIERTO && trip.estado !== TripStatus.COMPLETO) {
+      throw new BadRequestException('El viaje no se puede iniciar en su estado actual');
+    }
+
+    trip.estado = TripStatus.EN_CURSO;
+    return this.tripsRepository.save(trip);
+  }
+
   async completeTrip(tripId: string, conductorId: string): Promise<Trip> {
     const trip = await this.findOne(tripId);
     if (trip.conductorId !== conductorId) {
       throw new BadRequestException('Solo el conductor puede finalizar el viaje');
     }
-    if (trip.estado !== TripStatus.ABIERTO && trip.estado !== TripStatus.COMPLETO) {
-      throw new BadRequestException('El viaje no se puede finalizar en su estado actual');
+    if (trip.estado !== TripStatus.EN_CURSO) {
+      throw new BadRequestException('Solo se pueden finalizar viajes que estén en curso');
     }
 
     trip.estado = TripStatus.FINALIZADO;

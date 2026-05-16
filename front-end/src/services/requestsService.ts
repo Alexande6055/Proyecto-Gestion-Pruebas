@@ -43,6 +43,16 @@ export const requestsService = {
   },
 
   /**
+   * Cancela una solicitud de viaje
+   */
+  async cancel(id: string | number, reason: string): Promise<{ message: string }> {
+    return requestJson<{ message: string }>(`/requests/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    })
+  },
+
+  /**
    * Elimina una solicitud
    */
   async delete(id: string | number): Promise<void> {

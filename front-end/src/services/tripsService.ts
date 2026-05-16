@@ -35,6 +35,15 @@ export const tripsService = {
   },
 
   /**
+   * Inicia un viaje
+   */
+  async start(id: string | number): Promise<{ message: string }> {
+    return requestJson<{ message: string }>(`/trips/${id}/start`, {
+      method: 'POST',
+    })
+  },
+
+  /**
    * Finaliza un viaje
    */
   async complete(id: string | number): Promise<{ message: string }> {
