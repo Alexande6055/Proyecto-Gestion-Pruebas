@@ -14,6 +14,7 @@ import { Rating } from '../../ratings/entities/rating.entity';
 export enum TripStatus {
   ABIERTO = 'abierto',
   COMPLETO = 'completo',
+  EN_CURSO = 'en_curso',
   CANCELADO = 'cancelado',
   FINALIZADO = 'finalizado',
 }

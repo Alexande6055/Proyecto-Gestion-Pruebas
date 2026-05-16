@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards, Req } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 import { RequestsService } from './requests.service';
 import { RequestStatus } from './entities/request.entity';
 
@@ -36,5 +37,13 @@ export class RequestsController {
       body.conductor_id ?? body.conductorId ?? '',
       body.estado,
     );
+  }
+
+  @Post(':id/cancel')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancelar una solicitud de viaje' })
+  cancel(@Param('id') id: string, @Body() body: { reason: string }, @Req() req: any) {
+    return this.requestsService.cancelRequest(id, req.user.userId, body.reason);
   }
 }
