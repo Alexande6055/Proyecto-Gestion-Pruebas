@@ -17,21 +17,30 @@ interface Location {
   lng: number;
 }
 
+interface EtaInfo {
+  duration: string;
+  distance: string;
+}
+
 interface GoogleMapPickerProps {
   onOriginChange?: (location: Location, address?: string) => void;
   onDestinationChange?: (location: Location, address?: string) => void;
+  onEtaChange?: (eta: { toPassenger?: EtaInfo; toDestination?: EtaInfo }) => void;
   initialOrigin?: Location | null;
   initialDestination?: Location | null;
   driverLocation?: Location | null;
+  passengerLocation?: Location | null;
   readOnly?: boolean;
 }
 
 const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
   onOriginChange,
   onDestinationChange,
+  onEtaChange,
   initialOrigin,
   initialDestination,
   driverLocation,
+  passengerLocation,
   readOnly = false
 }) => {
   const { isLoaded } = useJsApiLoader({
@@ -70,12 +79,54 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
       (result, status) => {
         if (status === google.maps.DirectionsStatus.OK) {
           setDirections(result);
-        } else {
-          console.error(`error fetching directions ${status}`);
         }
       }
     );
   }, [origin, destination, isLoaded]);
+
+  // Calculate ETAs
+  useEffect(() => {
+    if (!isLoaded || !driverLocation) return;
+
+    const service = new google.maps.DistanceMatrixService();
+    const destinations: google.maps.LatLngLiteral[] = [];
+    
+    if (passengerLocation) destinations.push(passengerLocation);
+    if (destination) destinations.push(destination);
+
+    if (destinations.length === 0) return;
+
+    service.getDistanceMatrix(
+      {
+        origins: [driverLocation],
+        destinations: destinations,
+        travelMode: google.maps.TravelMode.DRIVING,
+      },
+      (response, status) => {
+        if (status === 'OK' && response) {
+          const results = response.rows[0].elements;
+          const eta: { toPassenger?: EtaInfo; toDestination?: EtaInfo } = {};
+          
+          if (passengerLocation && results[0].status === 'OK') {
+            eta.toPassenger = {
+              duration: results[0].duration.text,
+              distance: results[0].distance.text,
+            };
+          }
+          
+          const destIdx = passengerLocation ? 1 : 0;
+          if (destination && results[destIdx]?.status === 'OK') {
+            eta.toDestination = {
+              duration: results[destIdx].duration.text,
+              distance: results[destIdx].distance.text,
+            };
+          }
+          
+          onEtaChange?.(eta);
+        }
+      }
+    );
+  }, [isLoaded, driverLocation, passengerLocation, destination, onEtaChange]);
 
   useEffect(() => {
     if (origin && destination) {
@@ -133,7 +184,7 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
   return (
     <div className="space-y-2">
       <div className="text-xs text-gray-500 mb-1">
-        {readOnly ? 'Ubicación y ruta' : (
+        {readOnly ? 'Seguimiento en tiempo real' : (
           !origin ? 'Haz clic para seleccionar el PUNTO DE ORIGEN' : 
           !destination ? 'Haz clic para seleccionar el PUNTO DE DESTINO' : 
           'Ruta seleccionada (haz clic para reiniciar)'
@@ -141,8 +192,8 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
       </div>
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={driverLocation || origin || center}
-        zoom={13}
+        center={driverLocation || passengerLocation || origin || center}
+        zoom={14}
         onLoad={onLoad}
         onUnmount={onUnmount}
         onClick={onMapClick}
@@ -154,16 +205,31 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
       >
         {origin && <Marker position={origin} label="O" />}
         {destination && <Marker position={destination} label="D" />}
+        
         {driverLocation && (
           <Marker 
             position={driverLocation} 
             icon={{
               url: 'https://maps.google.com/mapfiles/kml/shapes/car.png',
-              scaledSize: new google.maps.Size(32, 32)
+              scaledSize: new google.maps.Size(40, 40),
+              anchor: new google.maps.Point(20, 20)
             }}
-            label="Conductor"
+            zIndex={100}
           />
         )}
+
+        {passengerLocation && (
+          <Marker 
+            position={passengerLocation} 
+            icon={{
+              url: 'https://maps.google.com/mapfiles/kml/shapes/man.png',
+              scaledSize: new google.maps.Size(32, 32),
+              anchor: new google.maps.Point(16, 32)
+            }}
+            label="Tú"
+          />
+        )}
+
         {directions && (
           <DirectionsRenderer
             directions={directions}
@@ -172,6 +238,7 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
               polylineOptions: {
                 strokeColor: '#3b82f6',
                 strokeWeight: 5,
+                strokeOpacity: 0.7
               }
             }}
           />

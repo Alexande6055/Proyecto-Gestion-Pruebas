@@ -73,6 +73,8 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
   
   // Real-time states
   const [driverLocation, setDriverLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [passengerLocation, setPassengerLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [etaInfo, setEtaInfo] = useState<{ toPassenger?: { duration: string; distance: string }; toDestination?: { duration: string; distance: string } } | null>(null);
 
   const {
     register,
@@ -87,6 +89,20 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
       cupos_disponibles: 4,
     }
   })
+
+  // Capturar ubicación del pasajero si está viendo un detalle
+  useEffect(() => {
+    if (detailRow && detailRow.conductor_id !== session.user.id && navigator.geolocation) {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => setPassengerLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => console.error('Error watchPosition passenger:', err),
+        { enableHighAccuracy: true }
+      );
+      return () => navigator.geolocation.clearWatch(watchId);
+    } else {
+      setPassengerLocation(null);
+    }
+  }, [detailRow, session]);
 
   // Socket logic
   useEffect(() => {
@@ -435,9 +451,28 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
           title="Detalle de viaje"
           subtitle={`Estado: ${String(detailRow.estado ?? 'N/A')}`}
           icon={<Eye className="w-4 h-4 text-blue-600" />}
-          onClose={() => { setDetailRow(null); setRequests([]); }}
+          onClose={() => { setDetailRow(null); setRequests([]); setEtaInfo(null); }}
         >
           <div className="space-y-6">
+              {detailRow.estado === 'en_curso' && etaInfo && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {etaInfo.toPassenger && (
+                          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                              <p className="text-[10px] font-bold text-blue-500 uppercase">El chofer llega a ti en</p>
+                              <p className="text-lg font-bold text-blue-700">{etaInfo.toPassenger.duration}</p>
+                              <p className="text-[10px] text-blue-400">{etaInfo.toPassenger.distance} de distancia</p>
+                          </div>
+                      )}
+                      {etaInfo.toDestination && (
+                          <div className="bg-green-50 border border-green-100 rounded-lg p-3">
+                              <p className="text-[10px] font-bold text-green-500 uppercase">Llegada al destino en</p>
+                              <p className="text-lg font-bold text-green-700">{etaInfo.toDestination.duration}</p>
+                              <p className="text-[10px] text-green-400">{etaInfo.toDestination.distance} restante</p>
+                          </div>
+                      )}
+                  </div>
+              )}
+
               {(detailRow.origen_lat && detailRow.destino_lat) || driverLocation ? (
                   <div className="rounded-lg overflow-hidden border border-night-100">
                       <GoogleMapPicker 
@@ -445,6 +480,8 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
                         initialOrigin={detailRow.origen_lat ? { lat: Number(detailRow.origen_lat), lng: Number(detailRow.origen_lng) } : null}
                         initialDestination={detailRow.destino_lat ? { lat: Number(detailRow.destino_lat), lng: Number(detailRow.destino_lng) } : null}
                         driverLocation={driverLocation}
+                        passengerLocation={passengerLocation}
+                        onEtaChange={setEtaInfo}
                       />
                   </div>
               ) : null}
