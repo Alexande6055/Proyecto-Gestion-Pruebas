@@ -1,5 +1,5 @@
-import { useMemo, type ReactNode } from 'react'
-import { useForm } from 'react-hook-form'
+import { useMemo, type ReactNode, useEffect } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import {
@@ -24,9 +24,11 @@ import { EntityHeader } from '../../components/page/EntityHeader'
 import { EntityField } from '../../components/page/EntityField'
 import { EntityTable } from '../../components/page/EntityTable'
 import { EntityDetailModal } from '../../components/page/EntityDetailModal'
+import GoogleMapPicker from '../../components/page/GoogleMapPicker'
 import type { AuthSession, EntityState, EntityRow, ViewKey } from '../../types'
 import { normalizeBackendRow } from '../../services'
 import { tripsService, requestsService } from '../../services'
+import { getSocket } from '../../services/socket'
 import { statusTone } from '../../constants/entities'
 import { tripSchema, type TripFormData } from '../../schemas/tripSchema'
 import { useState } from 'react'
@@ -68,16 +70,85 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
   const [detailRow, setDetailRow] = useState<EntityRow | null>(null)
   const [requests, setRequests] = useState<EntityRow[]>([])
   const [loadingRequests, setLoadingRequests] = useState(false)
+  
+  // Real-time states
+  const [driverLocation, setDriverLocation] = useState<{ lat: number, lng: number } | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
     setValue,
+    control,
     formState: { errors },
   } = useForm<TripFormData>({
     resolver: zodResolver(tripSchema),
+    defaultValues: {
+      cupos_disponibles: 4,
+    }
   })
+
+  // Socket logic
+  useEffect(() => {
+    const socket = getSocket(session.user.id, session.access_token);
+    if (!socket) return;
+
+    if (detailRow) {
+      socket.emit('join_trip', { tripId: detailRow.id });
+      
+      const handleLocationUpdate = (data: { tripId: string, lat: number, lng: number }) => {
+        if (data.tripId === detailRow.id) {
+          setDriverLocation({ lat: data.lat, lng: data.lng });
+        }
+      };
+
+      socket.on('trip_location_updated', handleLocationUpdate);
+
+      return () => {
+        socket.emit('leave_trip', { tripId: detailRow.id });
+        socket.off('trip_location_updated', handleLocationUpdate);
+        setDriverLocation(null);
+      };
+    }
+  }, [detailRow, session]);
+
+  // Geolocation logic for drivers
+  useEffect(() => {
+    const activeTrip = state.rows.find(r => r.conductor_id === session.user.id && r.estado === 'en_curso');
+    
+    if (activeTrip && navigator.geolocation) {
+      const socket = getSocket(session.user.id, session.access_token);
+      
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          socket?.emit('update_trip_location', {
+            tripId: activeTrip.id,
+            lat: latitude,
+            lng: longitude
+          });
+        },
+        (err) => console.error('Error watchPosition:', err),
+        { enableHighAccuracy: true }
+      );
+
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
+  }, [state.rows, session]);
+
+  // Watch coordinates for the map
+  const origin_lat = useWatch({ control, name: 'origen_lat' });
+  const origin_lng = useWatch({ control, name: 'origen_lng' });
+  const destination_lat = useWatch({ control, name: 'destino_lat' });
+  const destination_lng = useWatch({ control, name: 'destino_lng' });
+
+  const currentOrigin = useMemo(() => 
+    origin_lat && origin_lng ? { lat: origin_lat, lng: origin_lng } : null
+  , [origin_lat, origin_lng]);
+
+  const currentDestination = useMemo(() => 
+    destination_lat && destination_lng ? { lat: destination_lat, lng: destination_lng } : null
+  , [destination_lat, destination_lng]);
 
   const filteredRows = useMemo(() => {
     return state.rows
@@ -113,6 +184,12 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
         }
         setValue(field.key as keyof TripFormData, value as any);
     });
+    
+    if (row.origen_lat) setValue('origen_lat', Number(row.origen_lat));
+    if (row.origen_lng) setValue('origen_lng', Number(row.origen_lng));
+    if (row.destino_lat) setValue('destino_lat', Number(row.destino_lat));
+    if (row.destino_lng) setValue('destino_lng', Number(row.destino_lng));
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -223,7 +300,7 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
 
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          <div className="xl:col-span-4">
+          <div className="xl:col-span-5">
             <div className="card-uride sticky top-24">
               <div className="flex items-center justify-between px-6 py-4 border-b border-night-100">
                 <div className="flex items-center gap-2">
@@ -240,32 +317,74 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
                 )}
               </div>
 
-              <form onSubmit={handleSubmit(onFormSubmit)} className="p-5 space-y-4">
-                <div className="space-y-4">
-                  {config.fields.map((field) => (
-                    <EntityField
-                      key={field.key}
-                      field={field}
-                      data={data}
-                      registration={register(
-                        field.key as keyof TripFormData,
-                        field.kind === 'number' ? { valueAsNumber: true } : undefined
-                        )}
-                      error={errors[field.key as keyof TripFormData]?.message}
+              <div className="p-5">
+                <div className="mb-6">
+                    <GoogleMapPicker 
+                        initialOrigin={currentOrigin}
+                        initialDestination={currentDestination}
+                        onOriginChange={(loc, addr) => {
+                            setValue('origen_lat', loc.lat);
+                            setValue('origen_lng', loc.lng);
+                            if (addr) setValue('origen_zona', addr);
+                        }}
+                        onDestinationChange={(loc, addr) => {
+                            setValue('destino_lat', loc.lat);
+                            setValue('destino_lng', loc.lng);
+                            if (addr) setValue('destino_zona', addr);
+                        }}
                     />
-                  ))}
+                    {(errors.origen_lat || errors.destino_lat) && (
+                        <p className="mt-2 text-xs text-red-500 font-medium">Debes seleccionar origen y destino en el mapa.</p>
+                    )}
                 </div>
-                <div className="pt-2 flex gap-3">
-                  <button type="submit" disabled={saving} className="btn-uride-primary flex-1 text-sm py-2.5">
-                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                    {editingId ? 'Actualizar' : 'Guardar'}
-                  </button>
-                </div>
-              </form>
+
+                <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <EntityField
+                            field={config.fields[0]} // Origen
+                            data={data}
+                            registration={register('origen_zona')}
+                            error={errors.origen_zona?.message}
+                        />
+                        <EntityField
+                            field={config.fields[1]} // Destino
+                            data={data}
+                            registration={register('destino_zona')}
+                            error={errors.destino_zona?.message}
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <EntityField
+                            field={config.fields[2]} // Fecha
+                            data={data}
+                            registration={register('fecha_hora')}
+                            error={errors.fecha_hora?.message}
+                        />
+                        <EntityField
+                            field={config.fields[3]} // Cupos
+                            data={data}
+                            registration={register('cupos_disponibles', { valueAsNumber: true })}
+                            error={errors.cupos_disponibles?.message}
+                        />
+                    </div>
+                    <EntityField
+                        field={config.fields[4]} // Notas
+                        data={data}
+                        registration={register('notas_reglas')}
+                        error={errors.notas_reglas?.message}
+                    />
+                    <div className="pt-2 flex gap-3">
+                    <button type="submit" disabled={saving} className="btn-uride-primary flex-1 text-sm py-2.5">
+                        {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                        {editingId ? 'Actualizar' : 'Guardar'}
+                    </button>
+                    </div>
+                </form>
+              </div>
             </div>
           </div>
 
-          <div className="xl:col-span-8">
+          <div className="xl:col-span-7">
             <div className="card-uride">
               <div className="flex items-center justify-between px-6 py-4 border-b border-night-100">
                 <div className="flex items-center gap-2">
@@ -319,8 +438,19 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
           onClose={() => { setDetailRow(null); setRequests([]); }}
         >
           <div className="space-y-6">
+              {(detailRow.origen_lat && detailRow.destino_lat) || driverLocation ? (
+                  <div className="rounded-lg overflow-hidden border border-night-100">
+                      <GoogleMapPicker 
+                        readOnly 
+                        initialOrigin={detailRow.origen_lat ? { lat: Number(detailRow.origen_lat), lng: Number(detailRow.origen_lng) } : null}
+                        initialDestination={detailRow.destino_lat ? { lat: Number(detailRow.destino_lat), lng: Number(detailRow.destino_lng) } : null}
+                        driverLocation={driverLocation}
+                      />
+                  </div>
+              ) : null}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {Object.entries(detailRow).map(([key, value]) => (
+                {Object.entries(detailRow).filter(([k]) => !['origen_lat', 'origen_lng', 'destino_lat', 'destino_lng'].includes(k)).map(([key, value]) => (
                   <div key={key} className="bg-night-50 rounded-uride-xs p-3">
                     <span className="text-[10px] font-bold text-night-400 uppercase tracking-wider block mb-1">{key}</span>
                     <span className="text-sm font-semibold text-night-900">{formatCellText(value)}</span>
@@ -442,6 +572,7 @@ function renderCell(row: EntityRow, column: string): ReactNode {
     return <Badge tone={statusTone[displayStatus] ?? statusTone[text] ?? 'neutral'}>{displayStatus}</Badge>
   }
   if (column === 'fecha_hora') return <span className="text-xs text-night-500 font-medium">{new Date(text).toLocaleString()}</span>
+  if (['origen_lat', 'origen_lng', 'destino_lat', 'destino_lng'].includes(column)) return <span className="text-[10px] text-night-400">{Number(value).toFixed(4)}</span>
   return <span className="text-sm text-night-700">{text}</span>
 }
 

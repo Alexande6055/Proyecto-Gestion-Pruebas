@@ -22,6 +22,22 @@ export class CreateTripDto {
   @Min(1)
   cupos_disponibles: number;
 
+  @ApiProperty({ example: -1.24908, description: 'Latitud de origen', required: false })
+  @IsOptional()
+  origen_lat?: number;
+
+  @ApiProperty({ example: -78.61675, description: 'Longitud de origen', required: false })
+  @IsOptional()
+  origen_lng?: number;
+
+  @ApiProperty({ example: -1.26806, description: 'Latitud de destino', required: false })
+  @IsOptional()
+  destino_lat?: number;
+
+  @ApiProperty({ example: -78.63222, description: 'Longitud de destino', required: false })
+  @IsOptional()
+  destino_lng?: number;
+
   @ApiProperty({
     example: 'Puntualidad por favor, máximo 5 min de espera.',
     description: 'Notas o reglas del viaje',

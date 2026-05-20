@@ -29,6 +29,39 @@ export class RequestsGateway implements OnGatewayConnection {
     }
   }
 
+  @SubscribeMessage('join_trip')
+  handleJoinTrip(
+    @MessageBody() data: { tripId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    client.join(`trip_${data.tripId}`);
+    return { joined: data.tripId };
+  }
+
+  @SubscribeMessage('leave_trip')
+  handleLeaveTrip(
+    @MessageBody() data: { tripId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    client.leave(`trip_${data.tripId}`);
+    return { left: data.tripId };
+  }
+
+  @UseGuards(WsJwtGuard)
+  @SubscribeMessage('update_trip_location')
+  handleUpdateLocation(
+    @MessageBody() data: { tripId: string; lat: number; lng: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    // Retransmitir la ubicación a todos en la sala del viaje
+    this.server.to(`trip_${data.tripId}`).emit('trip_location_updated', {
+      tripId: data.tripId,
+      lat: data.lat,
+      lng: data.lng,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   @UseGuards(WsJwtGuard)
   @SubscribeMessage('send_request')
   async handleSendRequest(

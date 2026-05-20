@@ -53,6 +53,18 @@ export class Trip {
   })
   "estado": TripStatus;
 
+  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  "origen_lat": number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  "origen_lng": number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  "destino_lat": number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  "destino_lng": number;
+
   @OneToMany(() => Request, (request) => request.viaje)
   "requests": Request[];
 

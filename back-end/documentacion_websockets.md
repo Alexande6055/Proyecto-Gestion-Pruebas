@@ -75,11 +75,44 @@ Un pasajero o el conductor cancelan una reserva (debe tener motivo).
   }
   ```
 
+### `join_trip` / `leave_trip`
+Un usuario se une o sale de la sala de un viaje para recibir actualizaciones de ubicación.
+- **Payload**:
+  ```json
+  {
+    "tripId": "UUID-del-viaje"
+  }
+  ```
+
+### `update_trip_location`
+Un conductor envía su ubicación actual durante un viaje en curso.
+- **Payload**:
+  ```json
+  {
+    "tripId": "UUID-del-viaje",
+    "lat": -1.2345,
+    "lng": -78.1234
+  }
+  ```
+
 ---
 
 ## 3. Eventos de Servidor (Outbound)
 
 Eventos que el Frontend debe escuchar.
+
+### `trip_location_updated`
+Notifica a todos los usuarios suscritos al viaje sobre la nueva ubicación del conductor.
+- **Escuchar en**: Sala del viaje (`trip_{tripId}`).
+- **Payload**:
+  ```json
+  {
+    "tripId": "UUID-del-viaje",
+    "lat": -1.2345,
+    "lng": -78.1234,
+    "timestamp": "2026-05-20T10:00:00Z"
+  }
+  ```
 
 ### `new_request`
 Notifica al **conductor** que alguien quiere unirse a su viaje.
