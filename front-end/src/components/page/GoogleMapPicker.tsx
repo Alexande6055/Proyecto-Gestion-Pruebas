@@ -56,6 +56,7 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
   const geocoder = useRef<google.maps.Geocoder | null>(null);
 
   useEffect(() => {
+    map;
     if (isLoaded && !geocoder.current) {
       geocoder.current = new google.maps.Geocoder();
     }
