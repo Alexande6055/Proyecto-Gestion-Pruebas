@@ -65,3 +65,11 @@ export interface EmptyStateProps {
   title: string
   message: string
 }
+
+export type NotificationItem = {
+  id: string
+  title: string
+  description: string
+  tone: StatusTone
+  createdAt?: string
+}

@@ -24,7 +24,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'uride-session-storage',
+      name: 'uride-session-storage-v2',
       partialize: (state) => ({ session: state.session }),
     }
   )

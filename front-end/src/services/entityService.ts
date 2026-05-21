@@ -10,7 +10,8 @@ export const entityService = {
    */
   async getAll<T extends EntityRow = EntityRow>(endpoint: string): Promise<T[]> {
     const data = await requestJson<T[] | { data: T[] }>(endpoint)
-    return Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
+    const rows = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
+    return rows.map((row) => normalizeBackendRow(row) as T)
   },
 
   /**

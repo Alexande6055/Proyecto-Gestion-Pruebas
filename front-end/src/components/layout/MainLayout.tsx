@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
-import type { AuthSession, ViewKey } from '../../types'
+import type { AuthSession, NotificationItem, ViewKey } from '../../types'
 
 interface MainLayoutProps {
   sidebarOpen: boolean
@@ -12,6 +12,8 @@ interface MainLayoutProps {
   search: string
   setSearch: (value: string) => void
   session: AuthSession
+  notifications: NotificationItem[]
+  onNotificationsAction: () => void
   handleLogout: () => void
 }
 
@@ -24,6 +26,8 @@ export function MainLayout({
   search,
   setSearch,
   session,
+  notifications,
+  onNotificationsAction,
   handleLogout,
 }: MainLayoutProps) {
   return (
@@ -41,6 +45,8 @@ export function MainLayout({
           search={search}
           setSearch={setSearch}
           session={session}
+          notifications={notifications}
+          onNotificationsAction={onNotificationsAction}
           handleLogout={handleLogout}
         />
 

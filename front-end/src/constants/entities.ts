@@ -16,7 +16,6 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     endpoint: '/users',
     createEndpoint: '/auth/register',
     columns: [
-      'id',
       'correo_institucional',
       'nombre',
       'carrera',
@@ -46,7 +45,6 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     subtitle: 'Publicacion de rutas, cupos, reglas y estado del viaje.',
     endpoint: '/trips',
     columns: [
-      'id',
       'conductor_id',
       'origen_zona',
       'destino_zona',
@@ -69,7 +67,7 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     title: 'Solicitudes',
     subtitle: 'Solicitudes de cupo realizadas por pasajeros.',
     endpoint: '/requests',
-    columns: ['id', 'viaje_id', 'pasajero_id', 'estado', 'fecha_solicitud'],
+    columns: ['viaje_id', 'pasajero_id', 'estado', 'fecha_solicitud'],
     fields: [
       { key: 'viaje_id', label: 'Viaje', kind: 'select', relation: 'trips' },
       { key: 'pasajero_id', label: 'Pasajero', kind: 'select', relation: 'users' },
@@ -80,7 +78,7 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     title: 'Calificaciones',
     subtitle: 'Evaluaciones entre usuarios despues de un viaje.',
     endpoint: '/ratings',
-    columns: ['id', 'viaje_id', 'calificador_id', 'calificado_id', 'puntuacion', 'comentario', 'created_at'],
+    columns: ['viaje_id', 'calificador_id', 'calificado_id', 'puntuacion', 'comentario', 'created_at'],
     fields: [
       { key: 'viaje_id', label: 'Viaje', kind: 'select', relation: 'trips' },
       { key: 'calificado_id', label: 'Calificado', kind: 'select', relation: 'users' },
@@ -94,7 +92,6 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     subtitle: 'Incidentes reportados, evidencia, estado y accion tomada.',
     endpoint: '/reports',
     columns: [
-      'id',
       'reportante_id',
       'reportado_id',
       'viaje_id',
@@ -119,7 +116,7 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     title: 'Auditoria',
     subtitle: 'Trazabilidad de acciones importantes dentro del sistema.',
     endpoint: '/audit_logs',
-    columns: ['id', 'usuario_id', 'accion', 'detalles', 'fecha_hora'],
+    columns: ['usuario_id', 'accion', 'detalles', 'fecha_hora'],
     fields: [
       { key: 'usuario_id', label: 'Usuario', kind: 'select', relation: 'users' },
       { key: 'accion', label: 'Accion' },
@@ -133,7 +130,6 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     subtitle: 'Informacion del usuario actual.',
     endpoint: '/profile',
     columns: [
-      'id',
       'correo_institucional',
       'nombre',
       'carrera',

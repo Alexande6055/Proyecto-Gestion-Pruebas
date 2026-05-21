@@ -33,5 +33,8 @@ export function useEntityData(key: ViewKey, endpoint: string) {
       return normalizeRows(payload)
     },
     enabled: !!endpoint,
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
 }

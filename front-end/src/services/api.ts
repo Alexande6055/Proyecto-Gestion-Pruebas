@@ -1,6 +1,24 @@
 import type { EntityRow } from '../types'
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '') as string
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '/api') as string
+
+function getStoredAccessToken() {
+  const persistedSession = localStorage.getItem('uride-session-storage-v2')
+
+  if (persistedSession) {
+    try {
+      const parsed = JSON.parse(persistedSession) as { state?: { session?: { access_token?: string } } }
+      if (parsed.state?.session?.access_token) return parsed.state.session.access_token
+    } catch {
+      localStorage.removeItem('uride-session-storage-v2')
+    }
+  }
+
+  localStorage.removeItem('uride-session-storage')
+  localStorage.removeItem('uride-session')
+
+  return ''
+}
 
 function buildUrl(url: string) {
   if (/^https?:\/\//.test(url)) return url
@@ -13,17 +31,12 @@ function buildUrl(url: string) {
 
 export async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
   const headers = new Headers(options?.headers)
-  const storedSession = localStorage.getItem('uride-session')
 
   if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
 
-  if (storedSession && !headers.has('Authorization')) {
-    try {
-      const session = JSON.parse(storedSession) as { access_token?: string }
-      if (session.access_token) headers.set('Authorization', `Bearer ${session.access_token}`)
-    } catch {
-      localStorage.removeItem('uride-session')
-    }
+  if (!headers.has('Authorization')) {
+    const accessToken = getStoredAccessToken()
+    if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
   }
 
   const response = await fetch(buildUrl(url), {
