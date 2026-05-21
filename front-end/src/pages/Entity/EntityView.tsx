@@ -1,5 +1,6 @@
 import { useState, useMemo, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
+import type { FieldValues, Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { 
@@ -16,10 +17,12 @@ import {
   Search,
   Database,
   FileText,
-  Plus
+  Plus,
+  Ban
 } from 'lucide-react'
 import { Badge } from '../../components/common/Badge'
 import { EmptyState } from '../../components/common/EmptyState'
+import { ActionModal } from '../../components/common/ActionModal'
 import { EntityHeader } from '../../components/page/EntityHeader'
 import { EntityField } from '../../components/page/EntityField'
 import { EntityTable } from '../../components/page/EntityTable'
@@ -48,6 +51,11 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
   const [saving, setSaving] = useState(false)
   const [editingUserId, setEditingUserId] = useState('')
   const [detailRow, setDetailRow] = useState<EntityRow | null>(null)
+  const [cancelingRequestId, setCancelingRequestId] = useState<string | number | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [resetPasswordRow, setResetPasswordRow] = useState<EntityRow | null>(null)
+  const [completeTripRow, setCompleteTripRow] = useState<EntityRow | null>(null)
+  const [cancelRequestRow, setCancelRequestRow] = useState<EntityRow | null>(null)
 
   // Determine which schema to use
   const schema = useMemo(() => {
@@ -62,8 +70,8 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
     reset,
     setValue,
     formState: { errors },
-  } = useForm<any>({
-    resolver: schema ? zodResolver(schema) : undefined,
+  } = useForm<FieldValues>({
+    resolver: schema ? zodResolver(schema) as unknown as Resolver<FieldValues> : undefined,
   })
 
   const filteredRows = useMemo(() => {
@@ -74,7 +82,7 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
     )
   }, [config.columns, search, state.rows])
 
-  const onFormSubmit = async (formData: any) => {
+  const onFormSubmit = async (formData: FieldValues) => {
     setSaving(true)
 
     try {
@@ -96,7 +104,7 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
         }
       } else if (config.key === 'requests') {
         await requestsService.create(payload)
-        toast.success('Solicitud creada correctamente.')
+        toast.success('Viaje solicitado, pendiente de confirmación de la reserva.')
       } else if (config.key === 'ratings') {
         await (await import('../../services')).ratingsService.create(payload)
         toast.success('Calificación creada correctamente.')
@@ -121,7 +129,7 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
     setDetailRow(null)
     
     // Fill form with user data
-    const fields: (keyof UserFormData)[] = [
+    const fields = [
       'correo_institucional',
       'nombre',
       'carrera',
@@ -129,7 +137,7 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
       'telefono',
       'zona_barrio',
       'estado'
-    ]
+    ] satisfies Array<keyof UserFormData>
     
     fields.forEach(field => {
       setValue(field, String(row[field] ?? ''))
@@ -137,15 +145,21 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
     setValue('password', '') // Clear password field on edit
   }
 
-  const handleResetPassword = async (row: EntityRow) => {
-    const newPassword = window.prompt(`Nueva contraseña para ${row.nombre ?? row.correo_institucional ?? 'usuario'}`)
-    if (!newPassword) return
+  const handleResetPassword = (row: EntityRow) => {
+    setResetPasswordRow(row)
+  }
 
+  const confirmResetPassword = async (newPassword: string) => {
+    if (!resetPasswordRow) return
+    setActionLoading(true)
     try {
-      await usersService.resetPassword(row.id as string | number, newPassword)
+      await usersService.resetPassword(resetPasswordRow.id as string | number, newPassword)
       toast.success('Contraseña actualizada correctamente.')
+      setResetPasswordRow(null)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'No se pudo actualizar la contraseña')
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -158,15 +172,22 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
     }
   }
 
-  const handleCompleteTrip = async (row: EntityRow) => {
-    if (!window.confirm('¿Finalizar este viaje?')) return
+  const handleCompleteTrip = (row: EntityRow) => {
+    setCompleteTripRow(row)
+  }
 
+  const confirmCompleteTrip = async () => {
+    if (!completeTripRow) return
+    setActionLoading(true)
     try {
-      await tripsService.complete(row.id as string | number)
+      await tripsService.complete(completeTripRow.id as string | number)
       toast.success('Viaje finalizado correctamente.')
+      setCompleteTripRow(null)
       onCreated()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'No se pudo finalizar el viaje')
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -187,6 +208,29 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
       onCreated()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'No se pudo actualizar la solicitud')
+    }
+  }
+
+  const handleCancelRequest = (row: EntityRow) => {
+    setCancelRequestRow(row)
+  }
+
+  const confirmCancelRequest = async (reason: string) => {
+    if (!cancelRequestRow) return
+    const requestId = cancelRequestRow.id as string | number
+    setCancelingRequestId(requestId)
+    setActionLoading(true)
+
+    try {
+      await requestsService.cancel(requestId, reason.trim())
+      toast.success('Reserva cancelada correctamente.')
+      setCancelRequestRow(null)
+      onCreated()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo cancelar la reserva')
+    } finally {
+      setCancelingRequestId(null)
+      setActionLoading(false)
     }
   }
 
@@ -345,16 +389,20 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
                         return [c, label]
                       }))}
                       rows={filteredRows}
-                      renderCell={(row, column) => renderCell(row, column, config.fields.find((item) => item.key === column), data)}
+                      renderCell={(row, column) => renderCell(row, column, config.key, config.fields.find((item) => item.key === column), data)}
                       renderActions={(row) => (
                         <RowActions
                           config={config}
                           row={row}
+                          data={data}
+                          session={session}
+                          cancelingRequestId={cancelingRequestId}
                           onEditUser={handleEditUser}
                           onResetPassword={handleResetPassword}
                           onViewTrip={handleViewTrip}
                           onCompleteTrip={handleCompleteTrip}
                           onRequestStatus={handleRequestStatus}
+                          onCancelRequest={handleCancelRequest}
                         />
                       )}
                       showActions={['users', 'trips', 'requests'].includes(config.key)}
@@ -366,6 +414,48 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
           </div>
         </div>
       </div>
+
+      <ActionModal
+        open={Boolean(resetPasswordRow)}
+        title="Actualizar clave"
+        description={`Define una nueva clave para ${String(resetPasswordRow?.nombre ?? resetPasswordRow?.correo_institucional ?? 'este usuario')}.`}
+        icon={<KeyRound className="w-5 h-5 text-night-600" />}
+        confirmLabel="Actualizar"
+        inputLabel="Nueva clave"
+        inputPlaceholder="Escribe la nueva clave"
+        inputType="password"
+        inputRequired
+        loading={actionLoading}
+        onClose={() => setResetPasswordRow(null)}
+        onConfirm={confirmResetPassword}
+      />
+
+      <ActionModal
+        open={Boolean(completeTripRow)}
+        title="Finalizar viaje"
+        description="Confirma que este viaje ya terminó. Esta acción actualizará el estado del viaje."
+        icon={<CheckCircle2 className="w-5 h-5 text-uride-600" />}
+        confirmLabel="Finalizar"
+        loading={actionLoading}
+        onClose={() => setCompleteTripRow(null)}
+        onConfirm={confirmCompleteTrip}
+      />
+
+      <ActionModal
+        open={Boolean(cancelRequestRow)}
+        title="Cancelar reserva"
+        description="Indica el motivo para cancelar esta reserva. Se actualizará el estado de la solicitud."
+        icon={<Ban className="w-5 h-5 text-red-600" />}
+        confirmLabel="Cancelar reserva"
+        tone="danger"
+        inputLabel="Motivo de cancelación"
+        inputPlaceholder="Ej. Ya no necesito el cupo"
+        inputType="textarea"
+        inputRequired
+        loading={actionLoading}
+        onClose={() => setCancelRequestRow(null)}
+        onConfirm={confirmCancelRequest}
+      />
 
       {/* DETAIL MODAL */}
       {detailRow && (
@@ -393,19 +483,27 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
 function RowActions({
   config,
   row,
+  data,
+  session,
+  cancelingRequestId,
   onEditUser,
   onResetPassword,
   onViewTrip,
   onCompleteTrip,
   onRequestStatus,
+  onCancelRequest,
 }: {
   config: EntityConfig
   row: EntityRow
+  data: Record<ViewKey, EntityState>
+  session: AuthSession
+  cancelingRequestId: string | number | null
   onEditUser: (row: EntityRow) => void
   onResetPassword: (row: EntityRow) => void
   onViewTrip: (row: EntityRow) => void
   onCompleteTrip: (row: EntityRow) => void
   onRequestStatus: (row: EntityRow, estado: 'aceptada' | 'rechazada') => void
+  onCancelRequest: (row: EntityRow) => void
 }) {
   if (config.key === 'users') {
     return (
@@ -457,25 +555,48 @@ function RowActions({
     )
   }
 
-  if (config.key === 'requests' && row.estado === 'pendiente') {
+  if (config.key === 'requests') {
+    const requestStatus = String(row.estado ?? '')
+    const activeStatuses = ['pendiente', 'aceptada']
+    const trip = data.trips.rows.find((item) => String(item.id) === String(row.viaje_id))
+    const isPassenger = String(row.pasajero_id) === String(session.user.id)
+    const isConductor = String(trip?.conductor_id ?? '') === String(session.user.id)
+    const canCancel = activeStatuses.includes(requestStatus) && (isPassenger || isConductor)
+    const isCanceling = String(cancelingRequestId ?? '') === String(row.id ?? '')
+
     return (
       <div className="flex items-center justify-end gap-2">
-        <button 
-          type="button" 
-          onClick={() => onRequestStatus(row, 'aceptada')}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-uride-600 bg-uride-50 rounded-uride-xs hover:bg-uride-100 transition-colors"
-        >
-          <CheckCircle2 className="w-3 h-3" />
-          Aceptar
-        </button>
-        <button 
-          type="button" 
-          onClick={() => onRequestStatus(row, 'rechazada')}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 rounded-uride-xs hover:bg-red-100 transition-colors"
-        >
-          <XCircle className="w-3 h-3" />
-          Rechazar
-        </button>
+        {requestStatus === 'pendiente' && isConductor && (
+          <>
+            <button 
+              type="button" 
+              onClick={() => onRequestStatus(row, 'aceptada')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-uride-600 bg-uride-50 rounded-uride-xs hover:bg-uride-100 transition-colors"
+            >
+              <CheckCircle2 className="w-3 h-3" />
+              Aceptar
+            </button>
+            <button 
+              type="button" 
+              onClick={() => onRequestStatus(row, 'rechazada')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 rounded-uride-xs hover:bg-red-100 transition-colors"
+            >
+              <XCircle className="w-3 h-3" />
+              Rechazar
+            </button>
+          </>
+        )}
+        {canCancel && (
+          <button 
+            type="button" 
+            disabled={isCanceling}
+            onClick={() => onCancelRequest(row)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 rounded-uride-xs hover:bg-red-100 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          >
+            {isCanceling ? <Loader2 className="w-3 h-3 animate-spin" /> : <Ban className="w-3 h-3" />}
+            Cancelar reserva
+          </button>
+        )}
       </div>
     )
   }
@@ -485,7 +606,13 @@ function RowActions({
   )
 }
 
-function renderCell(row: EntityRow, column: string, field: FieldConfig | undefined, data: Record<ViewKey, EntityState>): ReactNode {
+function renderCell(
+  row: EntityRow,
+  column: string,
+  entityKey: ViewKey,
+  field: FieldConfig | undefined,
+  data: Record<ViewKey, EntityState>,
+): ReactNode {
   const value = row[column]
   const text = String(value ?? '')
 
@@ -504,6 +631,15 @@ function renderCell(row: EntityRow, column: string, field: FieldConfig | undefin
   }
 
   if (field?.key === 'estado' || field?.key === 'rol') {
+    if (entityKey === 'requests' && field?.key === 'estado' && row.estado === 'pendiente') {
+      return (
+        <div className="space-y-1">
+          <Badge tone={statusTone[text] ?? 'neutral'}>{text}</Badge>
+          <p className="text-xs font-medium text-amber-700">Viaje solicitado, pendiente de confirmación de la reserva</p>
+        </div>
+      )
+    }
+
     return <Badge tone={statusTone[text] ?? 'neutral'}>{text}</Badge>
   }
 
@@ -518,12 +654,12 @@ function renderCell(row: EntityRow, column: string, field: FieldConfig | undefin
   return <span className="text-sm text-night-700">{text}</span>
 }
 
-function buildPayload(key: ViewKey, formData: any, editingUser: boolean) {
+function buildPayload(key: ViewKey, formData: FieldValues, editingUser: boolean) {
   const payload = Object.fromEntries(
     Object.entries(formData)
       .map(([fieldKey, value]) => [fieldKey, typeof value === 'string' ? value.trim() : value])
       .filter(([, value]) => value !== '' && value !== undefined)
-  ) as Record<string, any>
+  ) as Record<string, unknown>
 
   if (key === 'users') {
     if (editingUser) {

@@ -1,9 +1,10 @@
-import { lazy, Suspense, useMemo, useEffect } from 'react'
+import { lazy, Suspense, useMemo, useEffect, useRef } from 'react'
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 // Types
-import type { ViewKey, EntityState } from './types'
+import type { ViewKey, EntityState, EntityRow, NotificationItem } from './types'
 
 // Constants
 import { 
@@ -21,6 +22,7 @@ import { useAuthStore } from './store/useAuthStore'
 import { useUIStore } from './store/useUIStore'
 import { useBackendStatus } from './hooks/useBackendStatus'
 import { useEntityData } from './hooks/useEntityData'
+import { getSocket, disconnectSocket } from './services/socket'
 
 // Pages (Lazy loading)
 const AuthView = lazy(() => import('./pages/Auth/AuthView'))
@@ -41,6 +43,8 @@ function App() {
 
   const { session, setSession, logout } = useAuthStore()
   const { sidebarOpen, setSidebarOpen, search, setSearch } = useUIStore()
+  const requestStatusRef = useRef<Map<string, string>>(new Map())
+  const notificationsReadyRef = useRef(false)
   
   const { data: backendStatusResponse } = useBackendStatus()
   const backendStatus = backendStatusResponse ?? 'checking'
@@ -79,6 +83,136 @@ function App() {
     profile: initialEntityState,
   }), [usersQuery, tripsQuery, requestsQuery, ratingsQuery, reportsQuery, auditLogsQuery])
 
+  const notifications = useMemo<NotificationItem[]>(() => {
+    if (!session) return []
+
+    const tripById = new Map(data.trips.rows.map((trip) => [String(trip.id), trip]))
+    const passengerName = (request: EntityRow) => {
+      const passenger = request.pasajero && typeof request.pasajero === 'object' && !Array.isArray(request.pasajero)
+        ? request.pasajero as EntityRow
+        : data.users.rows.find((user) => String(user.id) === String(request.pasajero_id))
+      return String(passenger?.nombre ?? 'Pasajero')
+    }
+    const tripRoute = (trip?: EntityRow) => trip
+      ? `${String(trip.origen_zona ?? 'Origen')} - ${String(trip.destino_zona ?? 'Destino')}`
+      : 'Viaje'
+
+    return data.requests.rows
+      .map<NotificationItem | null>((request) => {
+        const trip = tripById.get(String(request.viaje_id))
+        const status = String(request.estado)
+        const isDriver = trip && String(trip.conductor_id) === String(session.user.id)
+        const isPassenger = String(request.pasajero_id) === String(session.user.id)
+
+        if (isDriver && status === 'pendiente') {
+          return {
+            id: String(request.id),
+            title: 'Reserva pendiente',
+            description: `${passengerName(request)} solicita cupo en ${tripRoute(trip)}.`,
+            tone: 'warning',
+            createdAt: String(request.fecha_solicitud ?? ''),
+          } satisfies NotificationItem
+        }
+
+        if (isPassenger && ['aceptada', 'rechazada', 'cancelada'].includes(status)) {
+          const title = status === 'aceptada'
+            ? 'Reserva aceptada'
+            : status === 'rechazada'
+              ? 'Reserva rechazada'
+              : 'Reserva cancelada'
+
+          const description = status === 'aceptada'
+            ? `Tu cupo en ${tripRoute(trip)} fue confirmado.`
+            : status === 'rechazada'
+              ? `Tu solicitud para ${tripRoute(trip)} fue rechazada.`
+              : `Tu reserva en ${tripRoute(trip)} fue cancelada.`
+
+          return {
+            id: String(request.id),
+            title,
+            description,
+            tone: status === 'aceptada' ? 'ok' : 'danger',
+            createdAt: String(request.fecha_solicitud ?? ''),
+          } satisfies NotificationItem
+        }
+
+        return null
+      })
+      .filter((item): item is NotificationItem => Boolean(item))
+      .sort((a, b) => new Date(b.createdAt ?? '').getTime() - new Date(a.createdAt ?? '').getTime())
+      .slice(0, 8)
+  }, [data.requests.rows, data.trips.rows, data.users.rows, session])
+
+  useEffect(() => {
+    if (!session) return
+
+    const socket = getSocket(session.user.id, session.access_token)
+    if (!socket) return
+
+    const refreshEntities = () => {
+      queryClient.invalidateQueries({ queryKey: ['entities'] })
+    }
+
+    const handleNewRequest = () => {
+      toast.info('Nueva reserva pendiente.')
+      refreshEntities()
+    }
+
+    const handleRequestUpdated = (payload?: { status?: string }) => {
+      toast.info(payload?.status ? `Reserva ${payload.status}.` : 'Reserva actualizada.')
+      refreshEntities()
+    }
+
+    const handleRequestCancelled = () => {
+      toast.info('Una reserva fue cancelada.')
+      refreshEntities()
+    }
+
+    socket.on('new_request', handleNewRequest)
+    socket.on('request_updated', handleRequestUpdated)
+    socket.on('request_cancelled', handleRequestCancelled)
+
+    return () => {
+      socket.off('new_request', handleNewRequest)
+      socket.off('request_updated', handleRequestUpdated)
+      socket.off('request_cancelled', handleRequestCancelled)
+    }
+  }, [queryClient, session])
+
+  useEffect(() => {
+    if (!session || data.requests.loading || data.trips.loading) return
+
+    const tripById = new Map(data.trips.rows.map((trip) => [String(trip.id), trip]))
+    const nextStatuses = new Map<string, string>()
+
+    for (const request of data.requests.rows) {
+      const requestId = String(request.id ?? '')
+      const status = String(request.estado ?? '')
+      if (!requestId || !status) continue
+
+      nextStatuses.set(requestId, status)
+
+      if (!notificationsReadyRef.current) continue
+
+      const previousStatus = requestStatusRef.current.get(requestId)
+      const trip = tripById.get(String(request.viaje_id))
+      const isDriverRequest = trip && String(trip.conductor_id) === String(session.user.id)
+      const isPassengerRequest = String(request.pasajero_id) === String(session.user.id)
+
+      if (!previousStatus && isDriverRequest && status === 'pendiente') {
+        toast.info('Nueva reserva pendiente para uno de tus viajes.')
+      } else if (previousStatus && previousStatus !== status && isPassengerRequest) {
+        if (status === 'aceptada') toast.success('Tu reserva fue aceptada. Cupo confirmado.')
+        else if (status === 'rechazada') toast.error('Tu reserva fue rechazada.')
+        else if (status === 'cancelada') toast.info('Tu reserva fue cancelada.')
+        else toast.info(`Tu reserva fue ${status}.`)
+      }
+    }
+
+    requestStatusRef.current = nextStatuses
+    notificationsReadyRef.current = true
+  }, [data.requests.loading, data.requests.rows, data.trips.loading, data.trips.rows, session])
+
   // Security: redirect if trying to access unauthorized view
   useEffect(() => {
     if (session && !visibleViews.includes(activeView)) {
@@ -89,6 +223,7 @@ function App() {
   }, [activeView, session, visibleViews, navigate])
 
   const handleLogout = async () => {
+    disconnectSocket()
     await logout()
     queryClient.clear()
     navigate('/')
@@ -120,10 +255,12 @@ function App() {
             search={search}
             setSearch={setSearch}
             session={session}
+            notifications={notifications}
+            onNotificationsAction={() => navigate('/trips')}
             handleLogout={handleLogout}
           />
         }>
-          <Route path="/" element={<DashboardView data={data} />} />
+          <Route path="/" element={<DashboardView data={data} session={session} />} />
           <Route path="/profile" element={<ProfileView session={session} onSessionUpdate={setSession} />} />
           <Route path="/trips" element={<TripsView state={data.trips} data={data} session={session} onCreated={handleCreated} />} />
           <Route path="/users" element={isAdmin ? <UsersView state={data.users} data={data} session={session} onCreated={handleCreated} search={search} /> : <Navigate to="/" />} />

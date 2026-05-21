@@ -19,20 +19,49 @@ import {
 
 import { Badge } from '../../components/common/Badge'
 import { EmptyState } from '../../components/common/EmptyState'
-import type { EntityRow, ViewKey, EntityState } from '../../types'
+import type { AuthSession, EntityRow, ViewKey, EntityState } from '../../types'
 import { managedViews, statusTone } from '../../constants/entities'
 import { getRelatedName } from '../../utils/entityHelpers'
 
 interface DashboardViewProps {
   data: Record<ViewKey, EntityState>
+  session: AuthSession
 }
 
-export function DashboardView({ data }: DashboardViewProps) {
-  const users = data.users.rows
-  const trips = data.trips.rows
-  const requests = data.requests.rows
-  const ratings = data.ratings.rows
-  const reports = data.reports.rows
+export function DashboardView({ data, session }: DashboardViewProps) {
+  const isAdmin = session.user.role === 'admin'
+  const userId = session.user.id
+  const allUsers = data.users.rows
+  const allTrips = data.trips.rows
+  const allRequests = data.requests.rows
+
+  const isTripMine = (trip: EntityRow) => String(trip.conductor_id) === String(userId)
+  const requestTrip = (request: EntityRow) => allTrips.find((trip) => String(trip.id) === String(request.viaje_id))
+  const isRequestMine = (request: EntityRow) => {
+    const trip = requestTrip(request)
+    return String(request.pasajero_id) === String(userId) || (trip ? isTripMine(trip) : false)
+  }
+
+  const requests = isAdmin ? allRequests : allRequests.filter(isRequestMine)
+  const requestTripIds = new Set(requests.map((request) => String(request.viaje_id)))
+  const trips = isAdmin
+    ? allTrips
+    : allTrips.filter((trip) => isTripMine(trip) || requestTripIds.has(String(trip.id)))
+  const ratings = isAdmin
+    ? data.ratings.rows
+    : data.ratings.rows.filter((rating) => (
+      String(rating.calificador_id) === String(userId)
+      || String(rating.calificado_id) === String(userId)
+      || requestTripIds.has(String(rating.viaje_id))
+    ))
+  const reports = isAdmin
+    ? data.reports.rows
+    : data.reports.rows.filter((report) => (
+      String(report.reportante_id) === String(userId)
+      || String(report.reportado_id) === String(userId)
+      || requestTripIds.has(String(report.viaje_id))
+    ))
+  const users = isAdmin ? allUsers : [{ id: userId, nombre: session.user.nombre, correo_institucional: session.user.email }]
   const loading = managedViews.some((key) => data[key].loading)
 
   const activeTrips = trips.filter((trip) => ['abierto', 'completo'].includes(String(trip.estado))).length
@@ -104,7 +133,7 @@ export function DashboardView({ data }: DashboardViewProps) {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="badge-uride">Panel Administrativo</span>
+                <span className="badge-uride">{isAdmin ? 'Panel Administrativo' : 'Mi actividad'}</span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider rounded-full">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                   En linea
@@ -114,7 +143,9 @@ export function DashboardView({ data }: DashboardViewProps) {
                 Gestion de <span className="text-gradient-uride">transporte compartido</span> estudiantil
               </h1>
               <p className="text-night-500 text-base leading-relaxed max-w-2xl">
-                Panel conectado al backend para consultar usuarios, viajes, solicitudes, calificaciones, reportes y auditoria en tiempo real.
+                {isAdmin
+                  ? 'Panel conectado al backend para consultar usuarios, viajes, solicitudes, calificaciones, reportes y auditoria en tiempo real.'
+                  : 'Panel conectado al backend con tus viajes, reservas, calificaciones y reportes en tiempo real.'}
               </p>
             </div>
 
@@ -148,7 +179,7 @@ export function DashboardView({ data }: DashboardViewProps) {
               <div className="w-11 h-11 rounded-uride-xs bg-linear-to-br from-uride-50 to-uride-100 flex items-center justify-center shadow-night">
                 <Users className="w-5 h-5 text-uride-600" />
               </div>
-              <span className="badge-uride">Usuarios</span>
+              <span className="badge-uride">{isAdmin ? 'Usuarios' : 'Cuenta'}</span>
             </div>
             <div className="text-3xl font-extrabold text-night-900">
               {loading ? (
@@ -157,7 +188,7 @@ export function DashboardView({ data }: DashboardViewProps) {
                 users.length
               )}
             </div>
-            <p className="text-sm text-night-500 mt-1">Registros activos en el sistema</p>
+            <p className="text-sm text-night-500 mt-1">{isAdmin ? 'Registros activos en el sistema' : 'Tu perfil activo'}</p>
             <div className="mt-3 h-1.5 bg-night-100 rounded-full overflow-hidden">
               <div className="h-full bg-linear-to-r from-uride-400 to-uride-500 rounded-full" style={{ width: '75%' }} />
             </div>
@@ -413,14 +444,14 @@ export function DashboardView({ data }: DashboardViewProps) {
                 <TrendingUp className="w-4 h-4 text-info-700" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-night-900">Actividad del sistema</h2>
-                <p className="text-xs text-night-500">Resumen general de todas las entidades</p>
+                <h2 className="text-lg font-bold text-night-900">{isAdmin ? 'Actividad del sistema' : 'Mi actividad'}</h2>
+                <p className="text-xs text-night-500">{isAdmin ? 'Resumen general de todas las entidades' : 'Resumen filtrado por tu cuenta'}</p>
               </div>
             </div>
             <div className="flex gap-2">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-uride-500" />
-                Usuarios: {users.length}
+                {isAdmin ? 'Usuarios' : 'Cuenta'}: {users.length}
               </span>
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-blue-500" />
@@ -440,7 +471,7 @@ export function DashboardView({ data }: DashboardViewProps) {
           {/* Visual bars */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { label: 'Usuarios', count: users.length, color: 'from-uride-400 to-uride-500', icon: Users },
+              { label: isAdmin ? 'Usuarios' : 'Cuenta', count: users.length, color: 'from-uride-400 to-uride-500', icon: Users },
               { label: 'Viajes', count: trips.length, color: 'from-blue-400 to-blue-500', icon: Route },
               { label: 'Solicitudes', count: requests.length, color: 'from-amber-400 to-amber-500', icon: Clock },
               { label: 'Calificaciones', count: ratings.length, color: 'from-yellow-400 to-yellow-500', icon: Star },
@@ -483,10 +514,10 @@ export function DashboardView({ data }: DashboardViewProps) {
               </div>
             </div>
             <div className="flex gap-3">
-              <button className="btn-uride-secondary text-sm py-2.5 px-5">
+              {isAdmin && <button className="btn-uride-secondary text-sm py-2.5 px-5">
                 <Users className="w-4 h-4 mr-2" />
                 Gestionar usuarios
-              </button>
+              </button>}
               <button className="btn-uride-primary text-sm py-2.5 px-5">
                 <Car className="w-4 h-4 mr-2" />
                 Ver viajes
@@ -503,7 +534,7 @@ export function DashboardView({ data }: DashboardViewProps) {
             <div className="flex items-center gap-2">
               <Car className="w-4 h-4 text-uride-500" />
               <span className="text-sm font-bold text-night-700">U-Ride</span>
-              <span className="text-sm text-night-400">| Panel Administrativo</span>
+              <span className="text-sm text-night-400">| {isAdmin ? 'Panel Administrativo' : 'Panel personal'}</span>
             </div>
             <p className="text-xs text-night-400">
               Sistema de gestion de transporte compartido estudiantil
