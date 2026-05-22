@@ -383,7 +383,6 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
       return
     }
     
-    const tripId = paymentTripRow?.id
     setPaymentAmount(numAmount)
     setPaymentTripRow(null)
     setShowPayPhoneModal(true)
