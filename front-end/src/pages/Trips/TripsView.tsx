@@ -20,6 +20,7 @@ import {
   MapPin,
   CalendarDays,
   Users,
+  CreditCard,
 } from 'lucide-react'
 import { Badge } from '../../components/common/Badge'
 import { EmptyState } from '../../components/common/EmptyState'
@@ -30,7 +31,7 @@ import { EntityDetailModal } from '../../components/page/EntityDetailModal'
 import GoogleMapPicker from '../../components/page/GoogleMapPicker'
 import type { AuthSession, EntityState, EntityRow, ViewKey } from '../../types'
 import { normalizeBackendRow } from '../../services'
-import { tripsService, requestsService } from '../../services'
+import { tripsService, requestsService, payphoneService } from '../../services'
 import { getSocket } from '../../services/socket'
 import { statusTone } from '../../constants/entities'
 import { tripSchema, type TripFormData } from '../../schemas/tripSchema'
@@ -79,6 +80,9 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
   const [startTripRow, setStartTripRow] = useState<EntityRow | null>(null)
   const [completeTripRow, setCompleteTripRow] = useState<EntityRow | null>(null)
   const [bookTripRow, setBookTripRow] = useState<EntityRow | null>(null)
+  const [paymentTripRow, setPaymentTripRow] = useState<EntityRow | null>(null)
+  const [paymentAmount, setPaymentAmount] = useState<number>(0)
+  const [showPayPhoneModal, setShowPayPhoneModal] = useState(false)
   const [cancelRequestId, setCancelRequestId] = useState<string | number | null>(null)
   const [activeFilter, setActiveFilter] = useState<TripFilter>('upcoming')
   
@@ -368,6 +372,34 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
     }
   }
 
+  const handlePayTrip = (row: EntityRow) => {
+    setPaymentTripRow(row)
+  }
+
+  const confirmPaymentAmount = async (amount: string) => {
+    const numAmount = parseFloat(amount)
+    if (isNaN(numAmount) || numAmount <= 0) {
+      toast.error('Ingresa un monto válido')
+      return
+    }
+    
+    const tripId = paymentTripRow?.id
+    setPaymentAmount(numAmount)
+    setPaymentTripRow(null)
+    setShowPayPhoneModal(true)
+    
+    // Pequeño delay para asegurar que el div esté en el DOM
+    setTimeout(() => {
+      payphoneService.renderButton("pp-button", {
+      amount: 115,
+      amountWithTax: 100,
+      tax: 15,
+      clientTransactionId: crypto.randomUUID(),
+      reference: "Compra Orden #1001",
+    });
+    }, 300)
+  }
+
   const handleManageRequest = async (requestId: string | number, status: 'aceptada' | 'rechazada') => {
       try {
           await requestsService.updateStatus(requestId, { 
@@ -606,6 +638,7 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
                         onCompleteTrip={handleCompleteTrip}
                         onBookTrip={handleBookTrip}
                         onCancelRequest={handleCancelRequest}
+                        onPayTrip={handlePayTrip}
                       />
                     ))}
                   </div>
@@ -676,6 +709,41 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
         onClose={() => setCancelRequestId(null)}
         onConfirm={confirmCancelRequest}
       />
+
+      <ActionModal
+        open={Boolean(paymentTripRow)}
+        title="Realizar pago"
+        description="Ingresa el monto a pagar por este viaje."
+        icon={<CreditCard className="w-5 h-5 text-uride-600" />}
+        confirmLabel="Continuar"
+        inputLabel="Monto (USD)"
+        inputPlaceholder="0.00"
+        inputType="text"
+        inputRequired
+        onClose={() => setPaymentTripRow(null)}
+        onConfirm={confirmPaymentAmount}
+      />
+
+      {showPayPhoneModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-night-900/60 backdrop-blur-sm">
+          <div className="card-uride w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+            <CreditCard className="w-12 h-12 text-uride-600 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-night-900 mb-2">Finalizar Pago</h2>
+            <p className="text-sm text-night-500 mb-6">Monto a pagar: <span className="font-bold text-night-900">${paymentAmount.toFixed(2)}</span></p>
+            
+            <div id="pp-button" className="flex justify-center mb-6 min-h-[50px]">
+                <div className="animate-pulse bg-night-100 rounded-lg w-full h-12 flex items-center justify-center text-[10px] text-night-400 uppercase tracking-widest font-bold">Cargando PayPhone...</div>
+            </div>
+
+            <button 
+              onClick={() => setShowPayPhoneModal(false)}
+              className="text-sm text-night-400 hover:text-night-600 underline"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {detailRow && (
         <EntityDetailModal
@@ -798,6 +866,7 @@ function TripCard({
   onCompleteTrip,
   onBookTrip,
   onCancelRequest,
+  onPayTrip,
 }: {
   row: EntityRow
   data: Record<ViewKey, EntityState>
@@ -809,6 +878,7 @@ function TripCard({
   onCompleteTrip: (row: EntityRow) => void
   onBookTrip: (row: EntityRow) => void
   onCancelRequest: (requestId: string | number) => void
+  onPayTrip: (row: EntityRow) => void
 }) {
   const isConductor = String(row.conductor_id) === String(userId)
   const status = String(row.estado)
@@ -828,6 +898,7 @@ function TripCard({
   const canStart = isConductor && (status === 'abierto' || status === 'completo')
   const canComplete = isConductor && status === 'en_curso'
   const canBook = !isConductor && !passengerRequest && status === 'abierto' && Number(row.cupos_disponibles) > 0
+  const canPay = !isConductor && passengerRequest && String(passengerRequest.estado) === 'aceptada'
   const dayLabel = getRelativeDayLabel(row.fecha_hora)
 
   return (
@@ -892,6 +963,12 @@ function TripCard({
             <button type="button" onClick={() => onBookTrip(row)} className="inline-flex items-center gap-1.5 rounded-uride-xs bg-uride-600 px-3 py-2 text-xs font-bold text-white hover:bg-uride-700">
               <UserPlus className="h-4 w-4" />
               Reservar
+            </button>
+          )}
+          {canPay && (
+            <button type="button" onClick={() => onPayTrip(row)} className="inline-flex items-center gap-1.5 rounded-uride-xs bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700">
+              <CreditCard className="h-4 w-4" />
+              Pagar
             </button>
           )}
           {passengerRequest && (
