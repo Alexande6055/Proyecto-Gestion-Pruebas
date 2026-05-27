@@ -64,8 +64,8 @@ export const payphoneService = {
 
     container.innerHTML = "";
 
-    const token = import.meta.env.VITE_PAYPHONE_TOKEN;
-    const storeId = import.meta.env.VITE_PAYPHONE_STORE_ID;
+    const token = import.meta.env.VITE_TOKEN_PAYPHONE;
+    const storeId = import.meta.env.VITE_STORE_ID;
 
     new window.PPaymentButtonBox({
       token,
