@@ -20,6 +20,7 @@ export function AuditLogsView({ state, data, session, onCreated, search }: Audit
       search={search}
       session={session}
       onCreated={onCreated}
+      readOnly
     />
   )
 }

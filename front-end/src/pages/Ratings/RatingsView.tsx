@@ -20,6 +20,7 @@ export function RatingsView({ state, data, session, onCreated, search }: Ratings
       search={search}
       session={session}
       onCreated={onCreated}
+      readOnly
     />
   )
 }

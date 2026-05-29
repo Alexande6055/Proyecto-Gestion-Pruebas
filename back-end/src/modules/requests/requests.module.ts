@@ -15,6 +15,6 @@ import { AuthModule } from '../auth/auth.module';
   ],
   controllers: [RequestsController],
   providers: [RequestsService, RequestsGateway],
-  exports: [RequestsService],
+  exports: [RequestsService, RequestsGateway],
 })
 export class RequestsModule {}

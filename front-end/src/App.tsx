@@ -171,11 +171,19 @@ function App() {
     socket.on('new_request', handleNewRequest)
     socket.on('request_updated', handleRequestUpdated)
     socket.on('request_cancelled', handleRequestCancelled)
+    socket.on('new_report_notification', (payload?: { reason?: string }) => {
+      toast.error('Has recibido un nuevo reporte. Tu reputación ha sido afectada.', {
+          description: payload?.reason ? `Motivo: ${payload.reason}` : undefined,
+          duration: 10000,
+      });
+      refreshEntities();
+    })
 
     return () => {
       socket.off('new_request', handleNewRequest)
       socket.off('request_updated', handleRequestUpdated)
       socket.off('request_cancelled', handleRequestCancelled)
+      socket.off('new_report_notification')
     }
   }, [queryClient, session])
 

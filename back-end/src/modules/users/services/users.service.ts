@@ -170,4 +170,22 @@ export class UsersService {
 
     await this.updatePassword(userId, newPassword);
   }
+
+  async applyPenalty(userId: string, amount: number): Promise<User> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Asegurarse de que reputacion_promedio sea un número
+    const currentRep = Number(user.reputacion_promedio) || 0;
+    user.reputacion_promedio = Math.max(0, currentRep - amount);
+    
+    // Si la reputación baja de cierto umbral, advertir al usuario
+    if (user.reputacion_promedio < 2.0) {
+        user.estado = UserStatus.ADVERTIDO;
+    }
+    
+    return this.usersRepository.save(user);
+  }
 }

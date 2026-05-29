@@ -17,12 +17,14 @@ export class RequestsController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Crear solicitud desde panel administrativo' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Crear solicitud de viaje' })
   @ApiResponse({ status: 201, description: 'Solicitud creada' })
-  create(@Body() body: { viaje_id?: string; viajeId?: string; pasajero_id?: string; pasajeroId?: string }) {
+  create(@Body() body: { viaje_id?: string; viajeId?: string }, @Req() req: any) {
     return this.requestsService.createRequest(
       body.viaje_id ?? body.viajeId ?? '',
-      body.pasajero_id ?? body.pasajeroId ?? '',
+      req.user.userId,
     );
   }
 

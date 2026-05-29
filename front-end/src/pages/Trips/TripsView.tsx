@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react'
+import { useMemo, type ReactNode, useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
@@ -14,30 +14,26 @@ import {
   Trash2,
   PlayCircle,
   Clock,
-  UserPlus,
   XCircle,
   Check,
-  MapPin,
-  CalendarDays,
-  Users,
-  CreditCard,
+  AlertTriangle,
+  Star,
 } from 'lucide-react'
 import { Badge } from '../../components/common/Badge'
 import { EmptyState } from '../../components/common/EmptyState'
-import { ActionModal } from '../../components/common/ActionModal'
 import { EntityHeader } from '../../components/page/EntityHeader'
 import { EntityField } from '../../components/page/EntityField'
+import { EntityTable } from '../../components/page/EntityTable'
 import { EntityDetailModal } from '../../components/page/EntityDetailModal'
+import { RatingModal } from '../../components/common/RatingModal'
 import GoogleMapPicker from '../../components/page/GoogleMapPicker'
 import type { AuthSession, EntityState, EntityRow, ViewKey } from '../../types'
 import { normalizeBackendRow } from '../../services'
-import { tripsService, requestsService, payphoneService } from '../../services'
+import { tripsService, requestsService, reportsService, ratingsService } from '../../services'
 import { getSocket } from '../../services/socket'
 import { statusTone } from '../../constants/entities'
 import { tripSchema, type TripFormData } from '../../schemas/tripSchema'
 import { useState } from 'react'
-
-type TripFilter = 'upcoming' | 'today' | 'tomorrow' | 'mine' | 'booked' | 'history'
 
 interface TripsViewProps {
   state: EntityState
@@ -52,6 +48,7 @@ const config = {
   subtitle: 'Publicacion de rutas, cupos, reglas y estado del viaje.',
   endpoint: '/trips',
   columns: [
+    'id',
     'conductor_id',
     'origen_zona',
     'destino_zona',
@@ -75,21 +72,15 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
   const [detailRow, setDetailRow] = useState<EntityRow | null>(null)
   const [requests, setRequests] = useState<EntityRow[]>([])
   const [loadingRequests, setLoadingRequests] = useState(false)
-  const [actionLoading, setActionLoading] = useState(false)
-  const [deleteTripRow, setDeleteTripRow] = useState<EntityRow | null>(null)
-  const [startTripRow, setStartTripRow] = useState<EntityRow | null>(null)
-  const [completeTripRow, setCompleteTripRow] = useState<EntityRow | null>(null)
-  const [bookTripRow, setBookTripRow] = useState<EntityRow | null>(null)
-  const [paymentTripRow, setPaymentTripRow] = useState<EntityRow | null>(null)
-  const [paymentAmount, setPaymentAmount] = useState<number>(0)
-  const [showPayPhoneModal, setShowPayPhoneModal] = useState(false)
-  const [cancelRequestId, setCancelRequestId] = useState<string | number | null>(null)
-  const [activeFilter, setActiveFilter] = useState<TripFilter>('upcoming')
   
   // Real-time states
   const [driverLocation, setDriverLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [passengerLocation, setPassengerLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [etaInfo, setEtaInfo] = useState<{ toPassenger?: { duration: string; distance: string }; toDestination?: { duration: string; distance: string } } | null>(null);
+
+  // Rating Modal state
+  const [ratingData, setRatingData] = useState<{ reportedId: string, reportedName: string, tripId: string } | null>(null);
+  const [ratingLoading, setRatingLoading] = useState(false);
 
   const {
     register,
@@ -105,9 +96,69 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
     }
   })
 
+  // Proactive Rating Check
+  useEffect(() => {
+    const checkPendingRatings = async () => {
+        const myRatings = (await ratingsService.getAll()).filter(r => String(r.calificador_id) === String(session.user.id));
+        const ratedTripIds = new Set(myRatings.map(r => String(r.viaje_id)));
+
+        const myTripsToRate = state.rows.filter(trip => 
+            String(trip.estado) === 'finalizado' && 
+            String(trip.conductor_id) === String(session.user.id)
+        );
+
+        const myReservations = data.requests.rows.filter(req => 
+            String(req.pasajero_id) === String(session.user.id) && 
+            String(req.estado) === 'aceptada'
+        );
+        const tripsIParticipatedIn = state.rows.filter(trip => 
+            String(trip.estado) === 'finalizado' && 
+            myReservations.some(req => String(req.viaje_id) === String(trip.id))
+        );
+
+        const unratedTrip = [...myTripsToRate, ...tripsIParticipatedIn].find(trip => !ratedTripIds.has(String(trip.id)));
+        
+        if (unratedTrip) {
+            const isConductor = String(unratedTrip.conductor_id) === String(session.user.id);
+            if (isConductor) {
+                const tripRequests = data.requests.rows.filter(r => String(r.viaje_id) === String(unratedTrip.id) && String(r.estado) === 'aceptada');
+                for (const req of tripRequests) {
+                    if (!myRatings.some(r => String(r.viaje_id) === String(unratedTrip.id) && String(r.calificado_id) === String(req.pasajero_id))) {
+                        toast('Viaje finalizado: ¿Cómo fue tu experiencia?', {
+                            description: `Califica al pasajero del viaje ${unratedTrip.origen_zona} - ${unratedTrip.destino_zona}`,
+                            action: {
+                                label: 'Calificar ahora',
+                                onClick: () => setRatingData({ reportedId: String(req.pasajero_id), reportedName: 'Pasajero', tripId: String(unratedTrip.id) })
+                            }
+                        });
+                        break;
+                    }
+                }
+            } else {
+                toast('Viaje finalizado: ¿Qué tal el servicio?', {
+                    description: `Califica al conductor del viaje ${unratedTrip.origen_zona} - ${unratedTrip.destino_zona}`,
+                    action: {
+                        label: 'Calificar ahora',
+                        onClick: () => setRatingData({ reportedId: String(unratedTrip.conductor_id), reportedName: 'Conductor', tripId: String(unratedTrip.id) })
+                    }
+                });
+            }
+        }
+    };
+
+    if (!state.loading && state.rows.length > 0) {
+        checkPendingRatings();
+    }
+  }, [state.rows, state.loading, data.requests.rows, session.user.id]);
+
   // Capturar ubicación del pasajero si está viendo un detalle
   useEffect(() => {
     if (detailRow && detailRow.conductor_id !== session.user.id && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setPassengerLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => console.error('Initial pos passenger error:', err)
+      );
+
       const watchId = navigator.geolocation.watchPosition(
         (pos) => setPassengerLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         (err) => console.error('Error watchPosition passenger:', err),
@@ -117,7 +168,7 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
     } else {
       setPassengerLocation(null);
     }
-  }, [detailRow, session]);
+  }, [detailRow?.id, session.user.id]);
 
   // Socket logic
   useEffect(() => {
@@ -141,18 +192,29 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
         setDriverLocation(null);
       };
     }
-  }, [detailRow, session]);
+  }, [detailRow?.id, session]);
 
   // Geolocation logic for drivers
   useEffect(() => {
     const activeTrip = state.rows.find(r => r.conductor_id === session.user.id && r.estado === 'en_curso');
     
     if (activeTrip && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          if (detailRow?.id === activeTrip.id) setDriverLocation({ lat: latitude, lng: longitude });
+        },
+        (err) => console.error('Initial pos driver error:', err)
+      );
+
       const socket = getSocket(session.user.id, session.access_token);
       
       const watchId = navigator.geolocation.watchPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
+          if (detailRow?.id === activeTrip.id) {
+            setDriverLocation({ lat: latitude, lng: longitude });
+          }
           socket?.emit('update_trip_location', {
             tripId: activeTrip.id,
             lat: latitude,
@@ -165,7 +227,7 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
 
       return () => navigator.geolocation.clearWatch(watchId);
     }
-  }, [state.rows, session]);
+  }, [state.rows, session, detailRow?.id]);
 
   // Watch coordinates for the map
   const origin_lat = useWatch({ control, name: 'origen_lat' });
@@ -181,58 +243,10 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
     destination_lat && destination_lng ? { lat: destination_lat, lng: destination_lng } : null
   , [destination_lat, destination_lng]);
 
-  const userRequestTripIds = useMemo(() => new Set(
-    data.requests.rows
-      .filter((request) => String(request.pasajero_id) === String(session.user.id))
-      .map((request) => String(request.viaje_id)),
-  ), [data.requests.rows, session.user.id])
-
-  const sortedRows = useMemo(() => {
-    return [...state.rows].sort((a, b) => getTripTime(a) - getTripTime(b))
-  }, [state.rows])
-
-  const filterCounts = useMemo(() => ({
-    upcoming: sortedRows.filter((row) => isUpcomingTrip(row)).length,
-    today: sortedRows.filter((row) => isSameLocalDay(row.fecha_hora, new Date()) && !isHistoryTrip(row)).length,
-    tomorrow: sortedRows.filter((row) => isTomorrow(row.fecha_hora) && !isHistoryTrip(row)).length,
-    mine: sortedRows.filter((row) => String(row.conductor_id) === String(session.user.id) && !isHistoryTrip(row)).length,
-    booked: sortedRows.filter((row) => userRequestTripIds.has(String(row.id)) && !isHistoryTrip(row)).length,
-    history: sortedRows.filter((row) => isHistoryTrip(row)).length,
-  }), [session.user.id, sortedRows, userRequestTripIds])
-
   const filteredRows = useMemo(() => {
-    switch (activeFilter) {
-      case 'today':
-        return sortedRows.filter((row) => isSameLocalDay(row.fecha_hora, new Date()) && !isHistoryTrip(row))
-      case 'tomorrow':
-        return sortedRows.filter((row) => isTomorrow(row.fecha_hora) && !isHistoryTrip(row))
-      case 'mine':
-        return sortedRows.filter((row) => String(row.conductor_id) === String(session.user.id) && !isHistoryTrip(row))
-      case 'booked':
-        return sortedRows.filter((row) => userRequestTripIds.has(String(row.id)) && !isHistoryTrip(row))
-      case 'history':
-        return sortedRows.filter((row) => isHistoryTrip(row)).reverse()
-      default:
-        return sortedRows.filter((row) => isUpcomingTrip(row))
-    }
-  }, [activeFilter, session.user.id, sortedRows, userRequestTripIds])
-
-  const pendingDriverRequests = useMemo(() => {
-    return data.requests.rows
-      .filter((request) => String(request.estado) === 'pendiente')
-      .map((request) => {
-        const passengerFromRequest = request.pasajero && typeof request.pasajero === 'object' && !Array.isArray(request.pasajero)
-          ? request.pasajero as EntityRow
-          : null
-
-        return {
-          request,
-          trip: data.trips.rows.find((trip) => String(trip.id) === String(request.viaje_id)),
-          passenger: passengerFromRequest ?? data.users.rows.find((user) => String(user.id) === String(request.pasajero_id)),
-        }
-      })
-      .filter((item) => item.trip && String(item.trip.conductor_id) === String(session.user.id))
-  }, [data.requests.rows, data.trips.rows, data.users.rows, session.user.id])
+    // Solo mostrar viajes donde el usuario es el conductor
+    return state.rows.filter(r => String(r.conductor_id) === String(session.user.id))
+  }, [state.rows, session.user.id])
 
   const onFormSubmit = async (formData: TripFormData) => {
     setSaving(true)
@@ -258,16 +272,11 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
   const handleEditTrip = (row: EntityRow) => {
     setEditingId(row.id as string | number)
     config.fields.forEach(field => {
-        const fieldKey = field.key as 'origen_zona' | 'destino_zona' | 'fecha_hora' | 'cupos_disponibles' | 'notas_reglas'
         let value = row[field.key];
         if (field.key === 'fecha_hora' && value) {
             value = new Date(String(value)).toISOString().slice(0, 16);
         }
-        if (fieldKey === 'cupos_disponibles') {
-            setValue(fieldKey, Number(value ?? 1));
-        } else {
-            setValue(fieldKey, String(value ?? ''));
-        }
+        setValue(field.key as keyof TripFormData, value as any);
     });
     
     if (row.origen_lat) setValue('origen_lat', Number(row.origen_lat));
@@ -278,22 +287,15 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  const handleDeleteTrip = (row: EntityRow) => {
-    setDeleteTripRow(row)
-  }
+  const handleDeleteTrip = async (row: EntityRow) => {
+    if (!window.confirm('¿Estás seguro de eliminar este viaje?')) return
 
-  const confirmDeleteTrip = async () => {
-    if (!deleteTripRow) return
-    setActionLoading(true)
     try {
-      await tripsService.delete(deleteTripRow.id as string | number)
+      await tripsService.delete(row.id as string | number)
       toast.success('Viaje eliminado.')
-      setDeleteTripRow(null)
       onCreated()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'No se pudo eliminar')
-    } finally {
-      setActionLoading(false)
     }
   }
 
@@ -315,88 +317,28 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
     }
   }
 
-  const handleStartTrip = (row: EntityRow) => {
-    setStartTripRow(row)
-  }
+  const handleStartTrip = async (row: EntityRow) => {
+    if (!window.confirm('¿Iniciar este viaje ahora?')) return
 
-  const confirmStartTrip = async () => {
-    if (!startTripRow) return
-    setActionLoading(true)
     try {
-      await tripsService.start(startTripRow.id as string | number)
+      await tripsService.start(row.id as string | number)
       toast.success('Viaje iniciado. ¡Buen viaje!')
-      setStartTripRow(null)
       onCreated()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'No se pudo iniciar el viaje')
-    } finally {
-      setActionLoading(false)
     }
   }
 
-  const handleCompleteTrip = (row: EntityRow) => {
-    setCompleteTripRow(row)
-  }
+  const handleCompleteTrip = async (row: EntityRow) => {
+    if (!window.confirm('¿Finalizar este viaje?')) return
 
-  const confirmCompleteTrip = async () => {
-    if (!completeTripRow) return
-    setActionLoading(true)
     try {
-      await tripsService.complete(completeTripRow.id as string | number)
+      await tripsService.complete(row.id as string | number)
       toast.success('Viaje finalizado correctamente.')
-      setCompleteTripRow(null)
       onCreated()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'No se pudo finalizar el viaje')
-    } finally {
-      setActionLoading(false)
     }
-  }
-
-  const handleBookTrip = (row: EntityRow) => {
-    setBookTripRow(row)
-  }
-
-  const confirmBookTrip = async () => {
-    if (!bookTripRow) return
-    setActionLoading(true)
-    try {
-      await requestsService.create({ viaje_id: bookTripRow.id, pasajero_id: session.user.id })
-      toast.success('Solicitud enviada.')
-      setBookTripRow(null)
-      onCreated()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo enviar la solicitud')
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const handlePayTrip = (row: EntityRow) => {
-    setPaymentTripRow(row)
-  }
-
-  const confirmPaymentAmount = async (amount: string) => {
-    const numAmount = parseFloat(amount)
-    if (isNaN(numAmount) || numAmount <= 0) {
-      toast.error('Ingresa un monto válido')
-      return
-    }
-    
-    setPaymentAmount(numAmount)
-    setPaymentTripRow(null)
-    setShowPayPhoneModal(true)
-    
-    // Pequeño delay para asegurar que el div esté en el DOM
-    setTimeout(() => {
-      payphoneService.renderButton("pp-button", {
-      amount: 115,
-      amountWithTax: 100,
-      tax: 15,
-      clientTransactionId: crypto.randomUUID(),
-      reference: "Compra Orden #1001",
-    });
-    }, 300)
   }
 
   const handleManageRequest = async (requestId: string | number, status: 'aceptada' | 'rechazada') => {
@@ -405,10 +347,7 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
               conductor_id: session.user.id,
               estado: status
           });
-          toast.success(status === 'aceptada'
-            ? 'Reserva aceptada. Se desconto un cupo del viaje.'
-            : 'Reserva rechazada. El pasajero recibira una notificacion.'
-          );
+          toast.success(`Solicitud ${status}.`);
           if (detailRow) handleViewTrip(detailRow);
           onCreated();
       } catch (error) {
@@ -416,23 +355,55 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
       }
   }
 
-  const handleCancelRequest = (requestId: string | number) => {
-      setCancelRequestId(requestId);
-  }
+  const handleCancelRequest = async (requestId: string | number) => {
+      const reason = window.prompt('Motivo de la cancelación:');
+      if (reason === null) return;
 
-  const confirmCancelRequest = async (reason: string) => {
-      if (!cancelRequestId) return;
-      setActionLoading(true);
       try {
-          await requestsService.cancel(cancelRequestId, reason.trim());
+          await requestsService.cancel(requestId, reason || 'Cancelado por el usuario');
           toast.success('Reserva cancelada.');
-          setCancelRequestId(null);
           if (detailRow) handleViewTrip(detailRow);
           onCreated();
       } catch (error) {
           toast.error(error instanceof Error ? error.message : 'No se pudo cancelar la reserva')
+      }
+  }
+
+  const handleReportUser = async (reportedId: string, reportedName: string, tripId?: string) => {
+      const reason = window.prompt(`Reportar a ${reportedName}. Motivo del reporte:`);
+      if (!reason) return;
+
+      try {
+          await reportsService.create({
+              reportadoId: reportedId,
+              viajeId: tripId,
+              motivo: reason,
+          });
+          toast.success('Reporte enviado correctamente. Se ha notificado al usuario y su reputación ha sido afectada.');
+          onCreated();
+      } catch (error) {
+          toast.error(error instanceof Error ? error.message : 'No se pudo enviar el reporte')
+      }
+  }
+
+  const confirmRateUser = async (score: number, comment: string) => {
+      if (!ratingData) return;
+      setRatingLoading(true);
+
+      try {
+          await ratingsService.create({
+              viajeId: ratingData.tripId,
+              calificadoId: ratingData.reportedId,
+              puntuacion: score,
+              comentario: comment || '',
+          });
+          toast.success('Calificación enviada correctamente.');
+          setRatingData(null);
+          onCreated();
+      } catch (error) {
+          toast.error(error instanceof Error ? error.message : 'No se pudo enviar la calificación')
       } finally {
-          setActionLoading(false);
+          setRatingLoading(false);
       }
   }
 
@@ -534,88 +505,13 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
           </div>
 
           <div className="xl:col-span-7">
-            {pendingDriverRequests.length > 0 && (
-              <div className="card-uride mb-6 border-amber-100">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-night-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-                      <Clock className="w-4 h-4 text-amber-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-bold text-night-900">Reservas pendientes</h2>
-                      <p className="text-xs text-night-500">Solicitudes listas para aceptar o rechazar.</p>
-                    </div>
-                  </div>
-                  <Badge tone="warning">{pendingDriverRequests.length}</Badge>
-                </div>
-                <div className="p-4 space-y-3">
-                  {pendingDriverRequests.map(({ request, trip, passenger }) => (
-                    <div key={String(request.id)} className="flex flex-col gap-3 rounded-uride-xs border border-amber-100 bg-amber-50/40 p-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-night-900">{String(passenger?.nombre ?? 'Pasajero')}</p>
-                        <p className="text-sm text-night-600">{String(trip?.origen_zona ?? 'Origen')} - {String(trip?.destino_zona ?? 'Destino')}</p>
-                        <p className="text-xs text-night-400">{formatDateTime(request.fecha_solicitud)}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleManageRequest(request.id as string | number, 'aceptada')}
-                          className="inline-flex items-center gap-1.5 rounded-uride-xs bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700"
-                        >
-                          <Check className="h-4 w-4" />
-                          Aceptar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleManageRequest(request.id as string | number, 'rechazada')}
-                          className="inline-flex items-center gap-1.5 rounded-uride-xs bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
-                        >
-                          <XCircle className="h-4 w-4" />
-                          Rechazar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="card-uride">
               <div className="flex items-center justify-between px-6 py-4 border-b border-night-100">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-linear-to-br from-night-100 to-night-200 flex items-center justify-center">
                     <Search className="w-4 h-4 text-night-600" />
                   </div>
-                  <div>
-                    <h2 className="text-base font-bold text-night-900">Viajes</h2>
-                    <p className="text-xs text-night-500">Ordenados por fecha y filtrados por utilidad.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-b border-night-100 px-4 py-3">
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {([
-                    ['upcoming', 'Proximos', filterCounts.upcoming],
-                    ['today', 'Hoy', filterCounts.today],
-                    ['tomorrow', 'Mañana', filterCounts.tomorrow],
-                    ['mine', 'Mis viajes', filterCounts.mine],
-                    ['booked', 'Mis reservas', filterCounts.booked],
-                    ['history', 'Historial', filterCounts.history],
-                  ] satisfies Array<[TripFilter, string, number]>).map(([key, label, count]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setActiveFilter(key)}
-                      className={`shrink-0 rounded-uride-xs px-3 py-2 text-xs font-bold transition-colors ${
-                        activeFilter === key
-                          ? 'bg-uride-600 text-white'
-                          : 'bg-night-50 text-night-600 hover:bg-night-100'
-                      }`}
-                    >
-                      {label} <span className={activeFilter === key ? 'text-white/80' : 'text-night-400'}>{count}</span>
-                    </button>
-                  ))}
+                  <h2 className="text-base font-bold text-night-900">Registros</h2>
                 </div>
               </div>
 
@@ -623,23 +519,28 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
                 {state.loading && <div className="p-12"><EmptyState title="Cargando" message="Por favor, espere..." icon={Loader2} /></div>}
                 {!state.loading && !filteredRows.length && <div className="p-8"><EmptyState title="Sin registros" message="No se encontraron registros que coincidan con la búsqueda." /></div>}
                 {!state.loading && Boolean(filteredRows.length) && (
-                  <div className="grid grid-cols-1 gap-3 p-2">
-                    {filteredRows.map((row) => (
-                      <TripCard
-                        key={String(row.id)}
-                        row={row}
-                        data={data}
-                        userId={session.user.id}
-                        onViewTrip={handleViewTrip}
-                        onEditTrip={handleEditTrip}
-                        onDeleteTrip={handleDeleteTrip}
-                        onStartTrip={handleStartTrip}
-                        onCompleteTrip={handleCompleteTrip}
-                        onBookTrip={handleBookTrip}
-                        onCancelRequest={handleCancelRequest}
-                        onPayTrip={handlePayTrip}
-                      />
-                    ))}
+                  <div className="overflow-x-auto">
+                    <EntityTable
+                      columns={config.columns}
+                      columnLabels={Object.fromEntries(config.columns.map((c) => {
+                        const found = config.fields.find((f) => f.key === c)
+                        return [c, found?.label ?? c.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase())]
+                      }))}
+                      rows={filteredRows}
+                      renderCell={renderCell}
+                      renderActions={(row) => (
+                        <TripRowActions
+                          row={row}
+                          userId={session.user.id}
+                          onViewTrip={handleViewTrip}
+                          onEditTrip={handleEditTrip}
+                          onDeleteTrip={handleDeleteTrip}
+                          onStartTrip={handleStartTrip}
+                          onCompleteTrip={handleCompleteTrip}
+                        />
+                      )}
+                      showActions
+                    />
                   </div>
                 )}
               </div>
@@ -647,102 +548,6 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
           </div>
         </div>
       </div>
-
-      <ActionModal
-        open={Boolean(deleteTripRow)}
-        title="Eliminar viaje"
-        description="Esta acción eliminará el viaje seleccionado. Confirma solo si ya no debe aparecer en el sistema."
-        icon={<Trash2 className="w-5 h-5 text-red-600" />}
-        confirmLabel="Eliminar"
-        tone="danger"
-        loading={actionLoading}
-        onClose={() => setDeleteTripRow(null)}
-        onConfirm={confirmDeleteTrip}
-      />
-
-      <ActionModal
-        open={Boolean(startTripRow)}
-        title="Iniciar viaje"
-        description="Confirma que deseas iniciar este viaje ahora."
-        icon={<PlayCircle className="w-5 h-5 text-uride-600" />}
-        confirmLabel="Iniciar"
-        loading={actionLoading}
-        onClose={() => setStartTripRow(null)}
-        onConfirm={confirmStartTrip}
-      />
-
-      <ActionModal
-        open={Boolean(completeTripRow)}
-        title="Finalizar viaje"
-        description="Confirma que este viaje ya terminó. Esta acción actualizará su estado."
-        icon={<CheckCircle2 className="w-5 h-5 text-uride-600" />}
-        confirmLabel="Finalizar"
-        loading={actionLoading}
-        onClose={() => setCompleteTripRow(null)}
-        onConfirm={confirmCompleteTrip}
-      />
-
-      <ActionModal
-        open={Boolean(bookTripRow)}
-        title="Solicitar reserva"
-        description="Se enviará una solicitud al conductor para unirte a este viaje."
-        icon={<UserPlus className="w-5 h-5 text-uride-600" />}
-        confirmLabel="Solicitar"
-        loading={actionLoading}
-        onClose={() => setBookTripRow(null)}
-        onConfirm={confirmBookTrip}
-      />
-
-      <ActionModal
-        open={Boolean(cancelRequestId)}
-        title="Cancelar reserva"
-        description="Indica el motivo para cancelar esta reserva. Se actualizará el estado de la solicitud."
-        icon={<XCircle className="w-5 h-5 text-red-600" />}
-        confirmLabel="Cancelar reserva"
-        tone="danger"
-        inputLabel="Motivo de cancelación"
-        inputPlaceholder="Ej. Ya no necesito el cupo"
-        inputType="textarea"
-        inputRequired
-        loading={actionLoading}
-        onClose={() => setCancelRequestId(null)}
-        onConfirm={confirmCancelRequest}
-      />
-
-      <ActionModal
-        open={Boolean(paymentTripRow)}
-        title="Realizar pago"
-        description="Ingresa el monto a pagar por este viaje."
-        icon={<CreditCard className="w-5 h-5 text-uride-600" />}
-        confirmLabel="Continuar"
-        inputLabel="Monto (USD)"
-        inputPlaceholder="0.00"
-        inputType="text"
-        inputRequired
-        onClose={() => setPaymentTripRow(null)}
-        onConfirm={confirmPaymentAmount}
-      />
-
-      {showPayPhoneModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-night-900/60 backdrop-blur-sm">
-          <div className="card-uride w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 duration-200">
-            <CreditCard className="w-12 h-12 text-uride-600 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-night-900 mb-2">Finalizar Pago</h2>
-            <p className="text-sm text-night-500 mb-6">Monto a pagar: <span className="font-bold text-night-900">${paymentAmount.toFixed(2)}</span></p>
-            
-            <div id="pp-button" className="flex justify-center mb-6 min-h-[50px]">
-                <div className="animate-pulse bg-night-100 rounded-lg w-full h-12 flex items-center justify-center text-[10px] text-night-400 uppercase tracking-widest font-bold">Cargando PayPhone...</div>
-            </div>
-
-            <button 
-              onClick={() => setShowPayPhoneModal(false)}
-              className="text-sm text-night-400 hover:text-night-600 underline"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
 
       {detailRow && (
         <EntityDetailModal
@@ -785,13 +590,34 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
               ) : null}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {getTripDetailItems(detailRow).map((item) => (
-                  <div key={item.label} className="bg-night-50 rounded-uride-xs p-3">
-                    <span className="text-[10px] font-bold text-night-400 uppercase tracking-wider block mb-1">{item.label}</span>
-                    <span className="text-sm font-semibold text-night-900">{item.value}</span>
+                {Object.entries(detailRow).filter(([k]) => !['origen_lat', 'origen_lng', 'destino_lat', 'destino_lng', 'id', 'conductor_id'].includes(k)).map(([key, value]) => (
+                  <div key={key} className="bg-night-50 rounded-uride-xs p-3">
+                    <span className="text-[10px] font-bold text-night-400 uppercase tracking-wider block mb-1">{key}</span>
+                    <span className="text-sm font-semibold text-night-900">{formatCellText(value)}</span>
                   </div>
                 ))}
               </div>
+
+              {detailRow.conductor_id !== session.user.id && (
+                  <div className="flex justify-end gap-2">
+                      {detailRow.estado === 'finalizado' && (
+                          <button 
+                            onClick={() => setRatingData({ reportedId: String(detailRow.conductor_id), reportedName: 'Conductor', tripId: String(detailRow.id) })}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-600 bg-amber-50 rounded-md hover:bg-amber-100 transition-colors"
+                          >
+                              <Star className="w-3.5 h-3.5" />
+                              Calificar Conductor
+                          </button>
+                      )}
+                      <button 
+                        onClick={() => handleReportUser(String(detailRow.conductor_id), 'Conductor', String(detailRow.id))}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+                      >
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          Reportar Conductor
+                      </button>
+                  </div>
+              )}
 
               {(detailRow.conductor_id === session.user.id || session.user.role === 'admin') && (
                   <div className="border-t border-night-100 pt-4">
@@ -810,6 +636,26 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
                                               <>
                                                 <button onClick={() => handleManageRequest(req.id as string, 'aceptada')} className="p-1.5 text-green-600 bg-green-50 rounded-md hover:bg-green-100" title="Aceptar"><Check className="w-4 h-4" /></button>
                                                 <button onClick={() => handleManageRequest(req.id as string, 'rechazada')} className="p-1.5 text-red-600 bg-red-50 rounded-md hover:bg-red-100" title="Rechazar"><XCircle className="w-4 h-4" /></button>
+                                              </>
+                                          )}
+                                          {req.estado === 'aceptada' && (
+                                              <>
+                                                {detailRow.estado === 'finalizado' && (
+                                                    <button 
+                                                        onClick={() => setRatingData({ reportedId: String(req.pasajero_id), reportedName: 'Pasajero', tripId: String(detailRow.id) })}
+                                                        className="p-1.5 text-amber-600 bg-amber-50 rounded-md hover:bg-amber-100" 
+                                                        title="Calificar Pasajero"
+                                                    >
+                                                        <Star className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    onClick={() => handleReportUser(String(req.pasajero_id), 'Pasajero', String(detailRow.id))}
+                                                    className="p-1.5 text-red-600 bg-red-50 rounded-md hover:bg-red-100" 
+                                                    title="Reportar Pasajero"
+                                                >
+                                                    <AlertTriangle className="w-4 h-4" />
+                                                </button>
                                               </>
                                           )}
                                       </div>
@@ -850,221 +696,76 @@ export function TripsView({ state, data, session, onCreated }: TripsViewProps) {
           </div>
         </EntityDetailModal>
       )}
+
+      {ratingData && (
+          <RatingModal
+            open={Boolean(ratingData)}
+            title={`Calificar a ${ratingData.reportedName}`}
+            subtitle="Tu opinión ayuda a mantener la comunidad segura."
+            onClose={() => setRatingData(null)}
+            onConfirm={confirmRateUser}
+            loading={ratingLoading}
+          />
+      )}
     </div>
   )
 }
 
-function TripCard({
+function TripRowActions({
   row,
-  data,
   userId,
   onViewTrip,
   onEditTrip,
   onDeleteTrip,
   onStartTrip,
   onCompleteTrip,
-  onBookTrip,
-  onCancelRequest,
-  onPayTrip,
 }: {
   row: EntityRow
-  data: Record<ViewKey, EntityState>
   userId: string
   onViewTrip: (row: EntityRow) => void
   onEditTrip: (row: EntityRow) => void
   onDeleteTrip: (row: EntityRow) => void
   onStartTrip: (row: EntityRow) => void
   onCompleteTrip: (row: EntityRow) => void
-  onBookTrip: (row: EntityRow) => void
-  onCancelRequest: (requestId: string | number) => void
-  onPayTrip: (row: EntityRow) => void
 }) {
-  const isConductor = String(row.conductor_id) === String(userId)
+  const isConductor = row.conductor_id === userId
   const status = String(row.estado)
-  const conductor = row.conductor && typeof row.conductor === 'object' && !Array.isArray(row.conductor)
-    ? row.conductor as EntityRow
-    : data.users.rows.find((user) => String(user.id) === String(row.conductor_id))
-  const passengerRequest = data.requests.rows.find((request) => (
-    String(request.viaje_id) === String(row.id)
-    && String(request.pasajero_id) === String(userId)
-    && ['pendiente', 'aceptada'].includes(String(request.estado))
-  ))
-  const pendingCount = data.requests.rows.filter((request) => (
-    String(request.viaje_id) === String(row.id) && String(request.estado) === 'pendiente'
-  )).length
   
   const canEdit = isConductor && status === 'abierto'
   const canStart = isConductor && (status === 'abierto' || status === 'completo')
   const canComplete = isConductor && status === 'en_curso'
-  const canBook = !isConductor && !passengerRequest && status === 'abierto' && Number(row.cupos_disponibles) > 0
-  const canPay = !isConductor && passengerRequest && String(passengerRequest.estado) === 'aceptada'
-  const dayLabel = getRelativeDayLabel(row.fecha_hora)
 
   return (
-    <article className="rounded-uride-xs border border-night-100 bg-white p-4 transition-colors hover:border-uride-100 hover:bg-uride-50/20">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Badge tone={statusTone[status] ?? 'neutral'}>{status.replace(/_/g, ' ')}</Badge>
-            {dayLabel && <Badge tone="info">{dayLabel}</Badge>}
-            {isConductor && pendingCount > 0 && <Badge tone="warning">{pendingCount} pendiente{pendingCount === 1 ? '' : 's'}</Badge>}
-            {passengerRequest && <Badge tone={statusTone[String(passengerRequest.estado)] ?? 'neutral'}>Reserva {String(passengerRequest.estado)}</Badge>}
-          </div>
-
-          <h3 className="text-base font-bold text-night-900">
-            {String(row.origen_zona ?? 'Origen')} - {String(row.destino_zona ?? 'Destino')}
-          </h3>
-          <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-night-600 sm:grid-cols-3">
-            <span className="inline-flex items-center gap-2"><CalendarDays className="h-4 w-4 text-night-400" />{formatDateTime(row.fecha_hora)}</span>
-            <span className="inline-flex items-center gap-2"><Users className="h-4 w-4 text-night-400" />{String(row.cupos_disponibles ?? 0)} cupos</span>
-            <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-night-400" />{String(conductor?.nombre ?? 'Sin conductor')}</span>
-          </div>
-          {row.notas_reglas && <p className="mt-3 text-sm text-night-500">{String(row.notas_reglas)}</p>}
-          {passengerRequest && (
-            <p className="mt-3 text-xs font-semibold text-amber-700">
-              {String(passengerRequest.estado) === 'aceptada'
-                ? 'Reserva aceptada. Tu cupo ya esta confirmado.'
-                : 'Viaje solicitado, pendiente de confirmacion de la reserva.'}
-            </p>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          <button type="button" onClick={() => onViewTrip(row)} className="inline-flex items-center gap-1.5 rounded-uride-xs bg-blue-50 px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-100">
-            <Eye className="h-4 w-4" />
-            Ver
-          </button>
-          {canEdit && (
-            <>
-              <button type="button" onClick={() => onEditTrip(row)} className="inline-flex items-center gap-1.5 rounded-uride-xs bg-amber-50 px-3 py-2 text-xs font-bold text-amber-600 hover:bg-amber-100">
-                <Edit className="h-4 w-4" />
-                Editar
-              </button>
-              <button type="button" onClick={() => onDeleteTrip(row)} className="inline-flex items-center gap-1.5 rounded-uride-xs bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100">
-                <Trash2 className="h-4 w-4" />
-                Eliminar
-              </button>
-            </>
-          )}
-          {canStart && (
-            <button type="button" onClick={() => onStartTrip(row)} className="inline-flex items-center gap-1.5 rounded-uride-xs bg-uride-50 px-3 py-2 text-xs font-bold text-uride-600 hover:bg-uride-100">
-              <PlayCircle className="h-4 w-4" />
-              Iniciar
-            </button>
-          )}
-          {canComplete && (
-            <button type="button" onClick={() => onCompleteTrip(row)} className="inline-flex items-center gap-1.5 rounded-uride-xs bg-green-50 px-3 py-2 text-xs font-bold text-green-600 hover:bg-green-100">
-              <CheckCircle2 className="h-4 w-4" />
-              Finalizar
-            </button>
-          )}
-          {canBook && (
-            <button type="button" onClick={() => onBookTrip(row)} className="inline-flex items-center gap-1.5 rounded-uride-xs bg-uride-600 px-3 py-2 text-xs font-bold text-white hover:bg-uride-700">
-              <UserPlus className="h-4 w-4" />
-              Reservar
-            </button>
-          )}
-          {canPay && (
-            <button type="button" onClick={() => onPayTrip(row)} className="inline-flex items-center gap-1.5 rounded-uride-xs bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700">
-              <CreditCard className="h-4 w-4" />
-              Pagar
-            </button>
-          )}
-          {passengerRequest && (
-            <button type="button" onClick={() => onCancelRequest(passengerRequest.id as string | number)} className="inline-flex items-center gap-1.5 rounded-uride-xs bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100">
-              <XCircle className="h-4 w-4" />
-              Cancelar reserva
-            </button>
-          )}
-        </div>
-      </div>
-    </article>
+    <div className="flex items-center justify-end gap-2">
+      <button type="button" onClick={() => onViewTrip(row)} className="p-1.5 text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100" title="Detalles"><Eye className="w-4 h-4" /></button>
+      {canEdit && (
+          <>
+            <button type="button" onClick={() => onEditTrip(row)} className="p-1.5 text-amber-600 bg-amber-50 rounded-md hover:bg-amber-100" title="Editar"><Edit className="w-4 h-4" /></button>
+            <button type="button" onClick={() => onDeleteTrip(row)} className="p-1.5 text-red-600 bg-red-50 rounded-md hover:bg-red-100" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+          </>
+      )}
+      {canStart && <button type="button" onClick={() => onStartTrip(row)} className="p-1.5 text-uride-600 bg-uride-50 rounded-md hover:bg-uride-100" title="Iniciar viaje"><PlayCircle className="w-4 h-4" /></button>}
+      {canComplete && <button type="button" onClick={() => onCompleteTrip(row)} className="p-1.5 text-green-600 bg-green-50 rounded-md hover:bg-green-100" title="Finalizar viaje"><CheckCircle2 className="w-4 h-4" /></button>}
+    </div>
   )
 }
 
-function getTripDetailItems(row: EntityRow) {
-  const conductor = row.conductor && typeof row.conductor === 'object' && !Array.isArray(row.conductor)
-    ? row.conductor as EntityRow
-    : null
-
-  return [
-    {
-      label: 'Conductor',
-      value: String(conductor?.nombre ?? 'Sin conductor asignado'),
-    },
-    {
-      label: 'Ruta',
-      value: `${String(row.origen_zona ?? 'Origen')} -> ${String(row.destino_zona ?? 'Destino')}`,
-    },
-    {
-      label: 'Fecha y hora',
-      value: formatDateTime(row.fecha_hora),
-    },
-    {
-      label: 'Cupos disponibles',
-      value: String(row.cupos_disponibles ?? '0'),
-    },
-    {
-      label: 'Estado',
-      value: String(row.estado ?? 'sin estado').replace(/_/g, ' '),
-    },
-    {
-      label: 'Notas',
-      value: String(row.notas_reglas ?? 'Sin notas registradas'),
-    },
-  ]
+function renderCell(row: EntityRow, column: string): ReactNode {
+  const value = row[column]
+  const text = String(value ?? '')
+  if (column === 'estado') {
+    const displayStatus = text.replace(/_/g, ' ')
+    return <Badge tone={statusTone[displayStatus] ?? statusTone[text] ?? 'neutral'}>{displayStatus}</Badge>
+  }
+  if (column === 'fecha_hora') return <span className="text-xs text-night-500 font-medium">{new Date(text).toLocaleString()}</span>
+  if (['origen_lat', 'origen_lng', 'destino_lat', 'destino_lng'].includes(column)) return <span className="text-[10px] text-night-400">{Number(value).toFixed(4)}</span>
+  return <span className="text-sm text-night-700">{text}</span>
 }
 
-function formatDateTime(value: EntityRow[string]) {
-  if (!value) return 'Sin fecha'
-  const date = new Date(String(value))
-  if (Number.isNaN(date.getTime())) return String(value)
-  return date.toLocaleString('es-EC', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  })
-}
-
-function getTripTime(row: EntityRow) {
-  const date = new Date(String(row.fecha_hora ?? ''))
-  return Number.isNaN(date.getTime()) ? Number.MAX_SAFE_INTEGER : date.getTime()
-}
-
-function isHistoryTrip(row: EntityRow) {
-  const status = String(row.estado)
-  const tripTime = getTripTime(row)
-  return ['finalizado', 'cancelado'].includes(status) || tripTime < startOfToday().getTime()
-}
-
-function isUpcomingTrip(row: EntityRow) {
-  return !isHistoryTrip(row) && ['abierto', 'completo', 'en_curso'].includes(String(row.estado))
-}
-
-function isSameLocalDay(value: EntityRow[string], target: Date) {
-  const date = new Date(String(value ?? ''))
-  if (Number.isNaN(date.getTime())) return false
-
-  return date.getFullYear() === target.getFullYear()
-    && date.getMonth() === target.getMonth()
-    && date.getDate() === target.getDate()
-}
-
-function isTomorrow(value: EntityRow[string]) {
-  const tomorrow = startOfToday()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  return isSameLocalDay(value, tomorrow)
-}
-
-function startOfToday() {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return today
-}
-
-function getRelativeDayLabel(value: EntityRow[string]) {
-  if (isSameLocalDay(value, new Date())) return 'Hoy'
-  if (isTomorrow(value)) return 'Mañana'
-  return ''
+function formatCellText(value: EntityRow[string]) {
+  if (value instanceof Date) return value.toLocaleString()
+  if (value && typeof value === 'object') return JSON.stringify(value)
+  return String(value ?? '')
 }
 
 export default TripsView

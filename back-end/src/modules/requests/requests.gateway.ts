@@ -130,4 +130,12 @@ export class RequestsGateway implements OnGatewayConnection {
 
     return { status: 'cancelada' };
   }
+
+  notifyReport(reportedId: string, reason: string) {
+    this.server.to(`user_${reportedId}`).emit('new_report_notification', {
+      message: 'Has recibido un nuevo reporte. Tu reputación ha sido afectada.',
+      reason,
+      timestamp: new Date().toISOString(),
+    });
+  }
 }

@@ -45,9 +45,10 @@ interface EntityViewProps {
   session: AuthSession
   onCreated: () => void
   ui?: PageUi
+  readOnly?: boolean
 }
 
-export function EntityView({ config, state, data, search, session, onCreated, ui }: EntityViewProps) {
+export function EntityView({ config, state, data, search, session, onCreated, ui, readOnly = false }: EntityViewProps) {
   const [saving, setSaving] = useState(false)
   const [editingUserId, setEditingUserId] = useState('')
   const [detailRow, setDetailRow] = useState<EntityRow | null>(null)
@@ -81,6 +82,23 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
       config.columns.some((column) => String(row[column] ?? '').toLowerCase().includes(term)),
     )
   }, [config.columns, search, state.rows])
+
+  // Filter data for selectors (e.g., only show active trips for requests)
+  const filteredData = useMemo(() => {
+    if (config.key === 'requests') {
+        return {
+            ...data,
+            trips: {
+                ...data.trips,
+                rows: data.trips.rows.filter(trip => 
+                    String(trip.estado) === 'abierto' && 
+                    Number(trip.cupos_disponibles) > 0
+                )
+            }
+        }
+    }
+    return data;
+  }, [data, config.key]);
 
   const onFormSubmit = async (formData: FieldValues) => {
     setSaving(true)
@@ -268,70 +286,72 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
         {/* MAIN GRID */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           {/* FORM PANEL */}
-          <div className="xl:col-span-4">
-            <div className="card-uride sticky top-24">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-night-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-linear-to-br from-uride-100 to-uride-200 flex items-center justify-center">
-                    {editingUserId ? <Pencil className="w-4 h-4 text-uride-600" /> : <Plus className="w-4 h-4 text-uride-600" />}
+          {!readOnly && (
+            <div className="xl:col-span-4">
+              <div className="card-uride sticky top-24">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-night-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-linear-to-br from-uride-100 to-uride-200 flex items-center justify-center">
+                      {editingUserId ? <Pencil className="w-4 h-4 text-uride-600" /> : <Plus className="w-4 h-4 text-uride-600" />}
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-night-900">{formTitle}</h2>
+                      <p className="text-[10px] text-night-400 uppercase tracking-wider">{editingUserId ? 'Modificando' : 'Nuevo registro'}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-base font-bold text-night-900">{formTitle}</h2>
-                    <p className="text-[10px] text-night-400 uppercase tracking-wider">{editingUserId ? 'Modo edición' : 'Nuevo registro'}</p>
-                  </div>
-                </div>
-                <Badge tone="neutral">{config.key}</Badge>
-              </div>
-
-              <form onSubmit={handleSubmit(onFormSubmit)} className="p-5 space-y-4">
-                <div className="space-y-4">
-                  {config.fields.map((field) => (
-                    <EntityField
-                      key={field.key}
-                      field={field}
-                      data={data}
-                      registration={register(field.key)}
-                      error={errors[field.key]?.message as string}
-                      placeholder={ui?.fieldPlaceholders?.[field.key]}
-                    />
-                  ))}
+                  <Badge tone="neutral">{config.key}</Badge>
                 </div>
 
-                <div className="pt-2 flex gap-3">
-                  <button 
-                    type="submit" 
-                    disabled={saving}
-                    className="btn-uride-primary flex-1 text-sm py-2.5"
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Guardando...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        {editingUserId ? 'Actualizar' : 'Guardar'}
-                      </>
-                    )}
-                  </button>
-                  {editingUserId && (
+                <form onSubmit={handleSubmit(onFormSubmit)} className="p-5 space-y-4">
+                  <div className="space-y-4">
+                    {config.fields.map((field) => (
+                      <EntityField
+                        key={field.key}
+                        field={field}
+                        data={filteredData}
+                        registration={register(field.key)}
+                        error={errors[field.key]?.message as string}
+                        placeholder={ui?.fieldPlaceholders?.[field.key]}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="pt-2 flex gap-3">
                     <button 
-                      type="button" 
-                      onClick={cancelEdit}
-                      className="btn-uride-ghost"
+                      type="submit" 
+                      disabled={saving}
+                      className="btn-uride-primary flex-1 text-sm py-2.5"
                     >
-                      <X className="w-4 h-4 mr-1.5" />
-                      Cancelar
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Guardando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          {editingUserId ? 'Actualizar' : 'Guardar'}
+                        </>
+                      )}
                     </button>
-                  )}
-                </div>
-              </form>
+                    {editingUserId && (
+                      <button 
+                        type="button" 
+                        onClick={cancelEdit}
+                        className="btn-uride-ghost"
+                      >
+                        <X className="w-4 h-4 mr-1.5" />
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* TABLE PANEL */}
-          <div className="xl:col-span-8">
+          <div className={readOnly ? 'xl:col-span-12' : 'xl:col-span-8'}>
             <div className="card-uride">
               <div className="flex items-center justify-between px-6 py-4 border-b border-night-100">
                 <div className="flex items-center gap-2">
@@ -557,11 +577,14 @@ function RowActions({
 
   if (config.key === 'requests') {
     const requestStatus = String(row.estado ?? '')
-    const activeStatuses = ['pendiente', 'aceptada']
     const trip = data.trips.rows.find((item) => String(item.id) === String(row.viaje_id))
     const isPassenger = String(row.pasajero_id) === String(session.user.id)
     const isConductor = String(trip?.conductor_id ?? '') === String(session.user.id)
-    const canCancel = activeStatuses.includes(requestStatus) && (isPassenger || isConductor)
+    
+    // Solo se puede cancelar si el viaje NO está finalizado Y la solicitud NO ha sido aceptada aún
+    const tripStatus = String(trip?.estado ?? '')
+    const canCancel = requestStatus === 'pendiente' && isPassenger && tripStatus !== 'finalizado'
+    
     const isCanceling = String(cancelingRequestId ?? '') === String(row.id ?? '')
 
     return (
@@ -581,7 +604,7 @@ function RowActions({
               onClick={() => onRequestStatus(row, 'rechazada')}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 rounded-uride-xs hover:bg-red-100 transition-colors"
             >
-              <XCircle className="w-3 h-3" />
+              <XCircle className="w-3.5 h-3.5" />
               Rechazar
             </button>
           </>

@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, UseGuards, Req } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { Report } from './entities/report.entity';
 
@@ -16,14 +17,16 @@ export class ReportsController {
   }
 
   @Post()
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Crear reporte' })
   @ApiResponse({ status: 201, description: 'Reporte creado' })
-  create(@Body() body: Partial<Report>) {
+  create(@Body() body: any, @Req() req: any) {
     return this.reportsService.create({
       ...body,
-      reportanteId: body.reportanteId ?? (body as any).reportante_id,
-      reportadoId: body.reportadoId ?? (body as any).reportado_id,
-      viajeId: body.viajeId ?? (body as any).viaje_id,
+      reportanteId: req.user.userId,
+      reportadoId: body.reportadoId ?? body.reportado_id,
+      viajeId: body.viajeId ?? body.viaje_id,
     });
   }
 }
