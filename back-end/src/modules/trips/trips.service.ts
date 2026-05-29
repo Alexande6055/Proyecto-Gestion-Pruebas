@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Trip, TripStatus } from './entities/trip.entity';
 import { CreateTripDto } from './dtos/create-trip.dto';
 import { Request, RequestStatus } from '../requests/entities/request.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class TripsService {
@@ -12,9 +13,16 @@ export class TripsService {
     private tripsRepository: Repository<Trip>,
     @InjectRepository(Request)
     private requestsRepository: Repository<Request>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
   ) {}
 
   async create(createTripDto: CreateTripDto, conductorId: string): Promise<Trip> {
+    const conductor = await this.usersRepository.findOne({ where: { id: conductorId } });
+    if (conductor && Number(conductor.reputacion_promedio) < 3.0) {
+      throw new BadRequestException('Tu reputación es inferior a 3.0. Estás bloqueado para crear nuevos viajes.');
+    }
+
     if (new Date(createTripDto.fecha_hora).getTime() < Date.now()) {
       throw new BadRequestException('No puedes crear un viaje en una fecha pasada');
     }
@@ -92,6 +100,11 @@ export class TripsService {
   }
 
   async startTrip(tripId: string, conductorId: string): Promise<Trip> {
+    const conductor = await this.usersRepository.findOne({ where: { id: conductorId } });
+    if (conductor && Number(conductor.reputacion_promedio) < 3.0) {
+      throw new BadRequestException('Tu reputación es inferior a 3.0. No puedes iniciar viajes.');
+    }
+
     const trip = await this.findOne(tripId);
     if (trip.conductorId !== conductorId) {
       throw new BadRequestException('Solo el conductor puede iniciar el viaje');

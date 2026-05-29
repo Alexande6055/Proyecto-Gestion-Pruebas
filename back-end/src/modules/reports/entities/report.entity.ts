@@ -13,6 +13,7 @@ export enum ReportStatus {
   PENDIENTE = 'pendiente',
   REVISADO = 'revisado',
   RESUELTO = 'resuelto',
+  RECHAZADO = 'rechazado',
 }
 
 @Entity('reports')

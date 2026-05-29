@@ -1,8 +1,7 @@
-import { Body, Controller, Get, Post, UseGuards, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, Param, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
-import { Report } from './entities/report.entity';
 
 @ApiTags('reports')
 @Controller('reports')
@@ -28,5 +27,16 @@ export class ReportsController {
       reportadoId: body.reportadoId ?? body.reportado_id,
       viajeId: body.viajeId ?? body.viaje_id,
     });
+  }
+
+  @Patch(':id/manage')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Gestionar reporte (Aceptar/Rechazar)' })
+  manageReport(
+    @Param('id') id: string,
+    @Body() body: { decision: 'aceptar' | 'rechazar'; actionTaken?: string },
+  ) {
+    return this.reportsService.manageReport(id, body.decision, body.actionTaken);
   }
 }

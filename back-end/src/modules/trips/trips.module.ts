@@ -5,10 +5,11 @@ import { TripsController } from './trips.controller';
 import { Trip } from './entities/trip.entity';
 import { AuthModule } from '../auth/auth.module';
 import { Request } from '../requests/entities/request.entity';
+import { User } from '../users/entities/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Trip, Request]),
+    TypeOrmModule.forFeature([Trip, Request, User]),
     AuthModule,
   ],
   providers: [TripsService],

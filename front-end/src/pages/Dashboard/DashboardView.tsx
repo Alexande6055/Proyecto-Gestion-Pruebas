@@ -80,8 +80,20 @@ export function DashboardView({ data, session }: DashboardViewProps) {
     return getRelatedName(row, relationKey, id)
   }
 
+  const currentUser = allUsers.find(u => String(u.id) === String(userId))
+  const isBlocked = currentUser && Number(currentUser.reputacion_promedio) < 3.0
+
   return (
     <div className="min-h-screen bg-night-50">
+      {isBlocked && (
+          <div className="bg-red-600 text-white px-6 py-4 flex items-center justify-center gap-3 animate-pulse">
+              <AlertTriangle className="w-6 h-6 shrink-0" />
+              <div className="text-center">
+                  <p className="font-black text-sm uppercase tracking-widest">CUENTA RESTRINGIDA</p>
+                  <p className="text-xs font-bold opacity-90">Tu reputación ha bajado a {currentUser.reputacion_promedio}. No puedes crear ni unirte a viajes hasta mejorarla.</p>
+              </div>
+          </div>
+      )}
 
       {/* TOP NAVIGATION BAR 
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-night-200">

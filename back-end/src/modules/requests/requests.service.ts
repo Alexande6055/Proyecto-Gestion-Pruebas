@@ -35,6 +35,11 @@ export class RequestsService {
 
     if (!trip) throw new NotFoundException('Viaje no encontrado');
     if (!passenger) throw new BadRequestException('La sesion del pasajero ya no es valida. Cierra sesion e inicia nuevamente');
+    
+    if (Number(passenger.reputacion_promedio) < 3.0) {
+      throw new BadRequestException('Tu reputación es inferior a 3.0. Estás bloqueado para solicitar viajes.');
+    }
+
     if (trip.conductorId === passengerId) throw new BadRequestException('No puedes solicitar tu propio viaje');
     if (trip.estado !== TripStatus.ABIERTO) throw new BadRequestException('El viaje ya no esta abierto');
     if (trip.cupos_disponibles <= 0) throw new BadRequestException('No hay cupos disponibles');
@@ -80,6 +85,11 @@ export class RequestsService {
     }
 
     if (status === RequestStatus.ACEPTADA) {
+      const passenger = await this.usersRepository.findOne({ where: { id: request.pasajeroId } });
+      if (passenger && Number(passenger.reputacion_promedio) < 3.0) {
+        throw new BadRequestException('El pasajero tiene una reputación inferior a 3.0 y está bloqueado.');
+      }
+
       if (request.viaje.cupos_disponibles <= 0) {
         throw new BadRequestException('Ya no hay cupos en el viaje');
       }

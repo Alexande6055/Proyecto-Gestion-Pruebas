@@ -34,6 +34,17 @@ export const reportsService = {
   },
 
   /**
+   * Gestiona un reporte (Aceptar/Rechazar)
+   */
+  async manage(id: string | number, decision: 'aceptar' | 'rechazar', actionTaken?: string): Promise<void> {
+    const { requestJson } = await import('./api')
+    return requestJson<void>(`/reports/${id}/manage`, {
+      method: 'PATCH',
+      body: JSON.stringify({ decision, actionTaken }),
+    })
+  },
+
+  /**
    * Elimina un reporte
    */
   async delete(id: string | number): Promise<void> {
