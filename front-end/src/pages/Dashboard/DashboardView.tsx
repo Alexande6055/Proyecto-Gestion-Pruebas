@@ -90,7 +90,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
               <AlertTriangle className="w-6 h-6 shrink-0" />
               <div className="text-center">
                   <p className="font-black text-sm uppercase tracking-widest">CUENTA RESTRINGIDA</p>
-                  <p className="text-xs font-bold opacity-90">Tu reputación ha bajado a {currentUser.reputacion_promedio}. No puedes crear ni unirte a viajes hasta mejorarla.</p>
+                  <p className="text-xs font-bold opacity-90">Tu reputación ha bajado a {averageRating}. No puedes crear ni unirte a viajes hasta mejorarla.</p>
               </div>
           </div>
       )}

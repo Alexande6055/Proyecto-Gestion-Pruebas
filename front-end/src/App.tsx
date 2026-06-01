@@ -274,7 +274,7 @@ function App() {
           <Route path="/users" element={isAdmin ? <UsersView state={data.users} data={data} session={session} onCreated={handleCreated} search={search} /> : <Navigate to="/" />} />
           <Route path="/requests" element={<RequestsView state={data.requests} data={data} session={session} onCreated={handleCreated} search={search} />} />
           <Route path="/ratings" element={<RatingsView state={data.ratings} data={data} session={session} onCreated={handleCreated} search={search} />} />
-          <Route path="/reports" element={<ReportsView state={data.reports} data={data} session={session} onCreated={handleCreated} search={search} />} />
+          <Route path="/reports" element={<ReportsView state={data.reports} data={data} session={session} onCreated={handleCreated} />} />
           <Route path="/audit-logs" element={isAdmin ? <AuditLogsView state={data.audit_logs} data={data} session={session} onCreated={handleCreated} search={search} /> : <Navigate to="/" />} />
           
           {managedViews.map(key => {

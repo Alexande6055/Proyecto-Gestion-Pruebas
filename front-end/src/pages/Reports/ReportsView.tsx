@@ -245,7 +245,7 @@ export function ReportsView({ state, data, session, onCreated }: ReportsViewProp
                     >
                         <option value="">Seleccionar usuario...</option>
                         {sharedUsers.map(u => (
-                            <option key={`${u.id}-${u.trip.id}`} value={u.id}>{u.nombre} (Viaje: {u.trip.origen_zona} - {u.trip.destino_zona})</option>
+                            <option key={`${u.id}-${u.trip.id}`} value={u.id}>{u.nombre} (Viaje: {String(u.trip.origen_zona)} - {String(u.trip.destino_zona)})</option>
                         ))}
                     </select>
 
@@ -255,7 +255,7 @@ export function ReportsView({ state, data, session, onCreated }: ReportsViewProp
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-bold text-night-400 block uppercase">Origen - Destino</span>
-                                    <p className="text-sm font-bold text-night-900">{selectedEntry.trip.origen_zona} → {selectedEntry.trip.destino_zona}</p>
+                                    <p className="text-sm font-bold text-night-900">{String(selectedEntry.trip.origen_zona)} → {String(selectedEntry.trip.destino_zona)}</p>
                                 </div>
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-bold text-night-400 block uppercase">Fecha</span>
