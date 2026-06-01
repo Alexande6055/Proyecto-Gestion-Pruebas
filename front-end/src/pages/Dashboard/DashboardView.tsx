@@ -16,6 +16,7 @@ import {
   Loader2,
   Filter
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { Badge } from '../../components/common/Badge'
 import { EmptyState } from '../../components/common/EmptyState'
@@ -29,6 +30,7 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ data, session }: DashboardViewProps) {
+  const navigate = useNavigate()
   const isAdmin = session.user.role === 'admin'
   const userId = session.user.id
   const allUsers = data.users.rows
@@ -93,44 +95,6 @@ export function DashboardView({ data, session }: DashboardViewProps) {
           </div>
       )}
 
-      {/* TOP NAVIGATION BAR 
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-night-200">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-uride-xs bg-linear-to-br from-uride-500 to-uride-600 flex items-center justify-center shadow-uride">
-                <Car className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-night-900 leading-tight">U-Ride</h1>
-                <p className="text-[10px] font-semibold text-uride-600 uppercase tracking-wider leading-tight">Admin Panel</p>
-              </div>
-            </div>
-
-            <div className="hidden md:flex items-center gap-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-night-400" />
-                <input 
-                  type="text"
-                  placeholder="Buscar viajes, usuarios..."
-                  className="input-uride pl-10 pr-4 py-2 text-sm w-64"
-                />
-              </div>
-              <button className="relative p-2 rounded-uride-xs hover:bg-night-100 transition-colors">
-                <Bell className="w-5 h-5 text-night-600" />
-                {pendingRequests > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-uride-500 rounded-full animate-pulse" />
-                )}
-              </button>
-              <div className="w-8 h-8 rounded-full bg-uride-100 flex items-center justify-center border-2 border-uride-200">
-                <Users className="w-4 h-4 text-uride-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
-      */}
-
       {/* HERO PANEL - Modo Claro */}
       <section className="relative overflow-hidden bg-white border-b border-night-200 px-6 py-10 sm:px-8 lg:px-12">
         {/* Decorative background elements */}
@@ -162,6 +126,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
             <div className="flex flex-wrap gap-3">
               <button 
                 type="button"
+                onClick={() => navigate('/trips')}
                 className="btn-uride-primary"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -169,6 +134,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
               </button>
               <button 
                 type="button"
+                onClick={() => navigate('/reports')}
                 className="btn-uride-secondary"
               >
                 <AlertTriangle className="w-4 h-4 mr-2" />
@@ -205,7 +171,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
           </div>
 
           {/* Active Trips Stat */}
-          <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300">
+          <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300 pointer-events-none">
             <div className="flex items-start justify-between mb-3">
               <div className="w-11 h-11 rounded-uride-xs bg-linear-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-night">
                 <Route className="w-5 h-5 text-blue-600" />
@@ -229,7 +195,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
           </div>
 
           {/* Pending Requests Stat */}
-          <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300">
+          <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300 cursor-pointer" onClick={() => navigate('/requests')}>
             <div className="flex items-start justify-between mb-3">
               <div className="w-11 h-11 rounded-uride-xs bg-linear-to-br from-amber-50 to-amber-100 flex items-center justify-center shadow-night">
                 <Clock className="w-5 h-5 text-amber-600" />
@@ -255,7 +221,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
           </div>
 
           {/* Rating Stat */}
-          <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300">
+          <div className="card-uride p-5 hover:shadow-night-xl hover:-translate-y-0.5 transition-all duration-300 cursor-pointer" onClick={() => navigate('/ratings')}>
             <div className="flex items-start justify-between mb-3">
               <div className="w-11 h-11 rounded-uride-xs bg-linear-to-br from-yellow-50 to-yellow-100 flex items-center justify-center shadow-night">
                 <Star className="w-5 h-5 text-yellow-600 fill-yellow-500" />
@@ -315,6 +281,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
                   {trips.slice(0, 6).map((trip, index) => (
                     <article 
                       key={String(trip.id)} 
+                      onClick={() => navigate('/trips')}
                       className="group flex items-center gap-4 p-3 rounded-uride-xs hover:bg-uride-50/60 transition-all duration-200 cursor-pointer"
                     >
                       {/* Trip number indicator */}
@@ -364,7 +331,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
 
             {trips.length > 6 && (
               <div className="px-6 py-3 border-t border-night-100">
-                <button className="link-uride text-sm flex items-center gap-1">
+                <button onClick={() => navigate('/trips')} className="link-uride text-sm flex items-center gap-1">
                   Ver todos los viajes
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
@@ -393,6 +360,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
                   {reports.slice(0, 6).map((report) => (
                     <article 
                       key={String(report.id)} 
+                      onClick={() => navigate('/reports')}
                       className="group flex items-start gap-3 p-3 rounded-uride-xs hover:bg-red-50/40 transition-all duration-200 cursor-pointer"
                     >
                       {/* Status indicator */}
@@ -435,7 +403,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
 
             {reports.length > 6 && (
               <div className="px-6 py-3 border-t border-night-100">
-                <button className="text-red-600 font-bold text-sm hover:text-red-700 flex items-center gap-1 transition-colors">
+                <button onClick={() => navigate('/reports')} className="text-red-600 font-bold text-sm hover:text-red-700 flex items-center gap-1 transition-colors">
                   Ver todos los reportes
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
@@ -463,15 +431,15 @@ export function DashboardView({ data, session }: DashboardViewProps) {
                 <span className="w-2 h-2 rounded-full bg-uride-500" />
                 {isAdmin ? 'Usuarios' : 'Cuenta'}: {users.length}
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-blue-50 transition-colors" onClick={() => navigate('/trips')}>
                 <span className="w-2 h-2 rounded-full bg-blue-500" />
                 Viajes: {trips.length}
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-amber-50 transition-colors" onClick={() => navigate('/requests')}>
                 <span className="w-2 h-2 rounded-full bg-amber-500" />
                 Solicitudes: {requests.length}
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-yellow-50 transition-colors" onClick={() => navigate('/ratings')}>
                 <span className="w-2 h-2 rounded-full bg-yellow-500" />
                 Calificaciones: {ratings.length}
               </span>
@@ -481,15 +449,15 @@ export function DashboardView({ data, session }: DashboardViewProps) {
           {/* Visual bars */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { label: isAdmin ? 'Usuarios' : 'Cuenta', count: users.length, color: 'from-uride-400 to-uride-500', icon: Users },
-              { label: 'Viajes', count: trips.length, color: 'from-blue-400 to-blue-500', icon: Route },
-              { label: 'Solicitudes', count: requests.length, color: 'from-amber-400 to-amber-500', icon: Clock },
-              { label: 'Calificaciones', count: ratings.length, color: 'from-yellow-400 to-yellow-500', icon: Star },
+              { label: isAdmin ? 'Usuarios' : 'Cuenta', count: users.length, color: 'from-uride-400 to-uride-500', icon: Users, path: isAdmin ? '/users' : '/profile' },
+              { label: 'Viajes', count: trips.length, color: 'from-blue-400 to-blue-500', icon: Route, path: '/trips' },
+              { label: 'Solicitudes', count: requests.length, color: 'from-amber-400 to-amber-500', icon: Clock, path: '/requests' },
+              { label: 'Calificaciones', count: ratings.length, color: 'from-yellow-400 to-yellow-500', icon: Star, path: '/ratings' },
             ].map((item) => {
               const maxVal = Math.max(users.length, trips.length, requests.length, ratings.length, 1)
               const percentage = maxVal > 0 ? (item.count / maxVal) * 100 : 0
               return (
-                <div key={item.label} className="bg-night-50 rounded-uride-xs p-4">
+                <div key={item.label} className="bg-night-50 rounded-uride-xs p-4 cursor-pointer hover:bg-night-100 transition-colors" onClick={() => navigate(item.path)}>
                   <div className="flex items-center gap-2 mb-3">
                     <item.icon className="w-4 h-4 text-night-400" />
                     <span className="text-xs font-semibold text-night-500 uppercase tracking-wider">{item.label}</span>
@@ -524,11 +492,11 @@ export function DashboardView({ data, session }: DashboardViewProps) {
               </div>
             </div>
             <div className="flex gap-3">
-              {isAdmin && <button className="btn-uride-secondary text-sm py-2.5 px-5">
+              {isAdmin && <button onClick={() => navigate('/users')} className="btn-uride-secondary text-sm py-2.5 px-5">
                 <Users className="w-4 h-4 mr-2" />
                 Gestionar usuarios
               </button>}
-              <button className="btn-uride-primary text-sm py-2.5 px-5">
+              <button onClick={() => navigate('/trips')} className="btn-uride-primary text-sm py-2.5 px-5">
                 <Car className="w-4 h-4 mr-2" />
                 Ver viajes
               </button>
