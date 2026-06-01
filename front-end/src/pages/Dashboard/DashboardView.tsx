@@ -68,20 +68,18 @@ export function DashboardView({ data, session }: DashboardViewProps) {
   const pendingRequests = requests.filter((request) => request.estado === 'pendiente').length
   const openReports = reports.filter((report) => report.estado !== 'resuelto').length
 
-  const ratingValues = ratings.map((rating) => Number(rating.puntuacion)).filter((value) => Number.isFinite(value))
-  const averageRating = ratingValues.length
-    ? (ratingValues.reduce((sum, rating) => sum + rating, 0) / ratingValues.length).toFixed(1)
-    : '0.0'
+  const currentUser = allUsers.find(u => String(u.id) === String(userId))
+  const isBlocked = currentUser && Number(currentUser.reputacion_promedio) < 3.0
+
+  // Usar la reputación real de la DB (que incluye penalizaciones) en lugar de un promedio local parcial
+  const averageRating = currentUser ? Number(currentUser.reputacion_promedio).toFixed(1) : '5.0'
 
   const userLabel = (row: EntityRow, relationKey: string, idKey: string) => {
     const id = row[idKey] as string | number | null | undefined
-    const user = users.find((item) => String(item.id) === String(id))
+    const user = allUsers.find((item) => String(item.id) === String(id))
     if (user?.nombre) return String(user.nombre)
     return getRelatedName(row, relationKey, id)
   }
-
-  const currentUser = allUsers.find(u => String(u.id) === String(userId))
-  const isBlocked = currentUser && Number(currentUser.reputacion_promedio) < 3.0
 
   return (
     <div className="min-h-screen bg-night-50">

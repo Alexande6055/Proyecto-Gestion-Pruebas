@@ -35,6 +35,23 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('profile')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
+  getProfile(@Req() req: any) {
+    return this.usersService.findById(req.user.userId);
+  }
+
+  @Get(':id')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Obtener un usuario por ID' })
+  findOne(@Param('id') id: string, @Req() req: any) {
+    if (req.user.role !== 'admin' && req.user.userId !== id) {
+      throw new ForbiddenException('No tienes permiso para ver este perfil');
+    }
+    return this.usersService.findById(id);
+  }
+
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Editar información de un usuario' })

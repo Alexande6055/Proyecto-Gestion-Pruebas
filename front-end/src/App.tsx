@@ -64,7 +64,7 @@ function App() {
   )
 
   // Fetch all managed data (This is for the dashboard summary, can be optimized later)
-  const usersQuery = useEntityData('users', isAdmin ? entityConfigs.users.endpoint : '')
+  const usersQuery = useEntityData('users', entityConfigs.users.endpoint)
   const tripsQuery = useEntityData('trips', entityConfigs.trips.endpoint)
   const requestsQuery = useEntityData('requests', entityConfigs.requests.endpoint)
   const ratingsQuery = useEntityData('ratings', entityConfigs.ratings.endpoint)

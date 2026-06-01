@@ -18,6 +18,13 @@ export const usersService = {
   },
 
   /**
+   * Obtiene el perfil del usuario autenticado
+   */
+  async getProfile(): Promise<EntityRow> {
+    return requestJson<EntityRow>('/users/profile')
+  },
+
+  /**
    * Obtiene un usuario específico por ID
    */
   async getById(id: string | number): Promise<EntityRow> {

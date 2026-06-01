@@ -17,7 +17,17 @@ export function useEntityData(key: ViewKey, endpoint: string) {
       let payload: unknown
 
       if (key === 'users') {
-        payload = await usersService.getAll()
+        try {
+          payload = await usersService.getAll()
+        } catch (error) {
+          // Si no tiene permiso para listar todos, obtenemos solo su perfil
+          try {
+            const profile = await usersService.getProfile()
+            payload = [profile]
+          } catch (profileError) {
+            throw error // Lanzar el error original si el perfil también falla
+          }
+        }
       } else if (key === 'trips') {
         payload = await tripsService.getAll()
       } else if (key === 'requests') {
