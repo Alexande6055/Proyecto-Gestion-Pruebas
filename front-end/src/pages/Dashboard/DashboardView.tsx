@@ -96,7 +96,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
       )}
 
       {/* HERO PANEL - Modo Claro */}
-      <section className="relative overflow-hidden bg-white border-b border-night-200 px-6 py-10 sm:px-8 lg:px-12">
+      <section className="relative overflow-hidden bg-white border-b border-night-200 px-4 py-8 sm:px-8 lg:px-12 sm:py-10">
         {/* Decorative background elements */}
         <div className="absolute inset-0 opacity-40">
           <div className="absolute top-0 right-0 w-72 h-72 bg-uride-100 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl" />
@@ -113,10 +113,10 @@ export function DashboardView({ data, session }: DashboardViewProps) {
                   En linea
                 </span>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-night-900 tracking-tight">
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-night-900 tracking-tight">
                 Gestion de <span className="text-gradient-uride">transporte compartido</span> estudiantil
               </h1>
-              <p className="text-night-500 text-base leading-relaxed max-w-2xl">
+              <p className="text-night-500 text-sm sm:text-base leading-relaxed max-w-2xl">
                 {isAdmin
                   ? 'Panel conectado al backend para consultar usuarios, viajes, solicitudes, calificaciones, reportes y auditoria en tiempo real.'
                   : 'Panel conectado al backend con tus viajes, reservas, calificaciones y reportes en tiempo real.'}
@@ -127,7 +127,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
               <button 
                 type="button"
                 onClick={() => navigate('/trips')}
-                className="btn-uride-primary"
+                className="btn-uride-primary text-sm px-4 py-2"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Nuevo viaje
@@ -135,7 +135,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
               <button 
                 type="button"
                 onClick={() => navigate('/reports')}
-                className="btn-uride-secondary"
+                className="btn-uride-secondary text-sm px-4 py-2"
               >
                 <AlertTriangle className="w-4 h-4 mr-2" />
                 Nuevo reporte
@@ -146,7 +146,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
       </section>
 
       {/* STATS GRID - Modo Claro */}
-      <section className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 -mt-6 relative z-20">
+      <section className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 -mt-6 relative z-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
           {/* Users Stat */}
@@ -252,7 +252,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
       </section>
 
       {/* SPLIT GRID - Trips & Reports - Modo Claro */}
-      <section className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Recent Trips Panel */}
@@ -414,7 +414,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
       </section>
 
       {/* ACTIVITY CHART SECTION - Nueva seccion modo claro */}
-      <section className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pb-6">
+      <section className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pb-6">
         <div className="card-uride p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -426,7 +426,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
                 <p className="text-xs text-night-500">{isAdmin ? 'Resumen general de todas las entidades' : 'Resumen filtrado por tu cuenta'}</p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-night-500 bg-night-50 px-3 py-1.5 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-uride-500" />
                 {isAdmin ? 'Usuarios' : 'Cuenta'}: {users.length}
@@ -477,7 +477,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
       </section>
 
       {/* QUICK ACTIONS BAR - Modo Claro */}
-      <section className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pb-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pb-12">
         <div className="card-uride p-6 bg-linear-to-r from-night-800 to-night-900">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -507,7 +507,7 @@ export function DashboardView({ data, session }: DashboardViewProps) {
 
       {/* FOOTER */}
       <footer className="border-t border-night-200 bg-white">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Car className="w-4 h-4 text-uride-500" />

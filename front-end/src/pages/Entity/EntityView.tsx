@@ -282,7 +282,7 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
         statusTone={state.error ? 'danger' : state.loading ? 'info' : 'ok'}
       />
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-8">
         {/* MAIN GRID */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           {/* FORM PANEL */}

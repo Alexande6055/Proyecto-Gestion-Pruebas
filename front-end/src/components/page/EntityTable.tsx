@@ -19,8 +19,9 @@ export function EntityTable({
   columnLabels,
 }: EntityTableProps) {
   return (
-    <table className="w-full">
-      <thead>
+    <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-night-200 scrollbar-track-transparent">
+      <table className="w-full min-w-[600px] md:min-w-full">
+        <thead>
         <tr className="border-b border-night-100">
           {columns.map((column) => (
             <th
@@ -55,5 +56,6 @@ export function EntityTable({
         ))}
       </tbody>
     </table>
+    </div>
   )
 }

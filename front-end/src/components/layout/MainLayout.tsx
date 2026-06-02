@@ -6,6 +6,8 @@ import type { AuthSession, NotificationItem, ViewKey } from '../../types'
 interface MainLayoutProps {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
+  isMobile: boolean
+  toggleSidebar: () => void
   visibleViews: ViewKey[]
   activeView: ViewKey
   backendStatus: 'checking' | 'online' | 'offline'
@@ -20,6 +22,8 @@ interface MainLayoutProps {
 export function MainLayout({
   sidebarOpen,
   setSidebarOpen,
+  isMobile,
+  toggleSidebar,
   visibleViews,
   activeView,
   backendStatus,
@@ -31,10 +35,11 @@ export function MainLayout({
   handleLogout,
 }: MainLayoutProps) {
   return (
-    <div className="h-screen min-h-screen bg-night-50 flex overflow-hidden">
+    <div className="h-screen min-h-screen bg-night-50 flex overflow-hidden relative">
       <Sidebar 
         sidebarOpen={sidebarOpen} 
         setSidebarOpen={setSidebarOpen} 
+        isMobile={isMobile}
         visibleViews={visibleViews} 
       />
 
@@ -48,12 +53,22 @@ export function MainLayout({
           notifications={notifications}
           onNotificationsAction={onNotificationsAction}
           handleLogout={handleLogout}
+          isMobile={isMobile}
+          toggleSidebar={toggleSidebar}
         />
 
-        <main className="flex-1 min-h-0 overflow-y-auto p-6">
+        <main className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
           <Outlet />
         </main>
       </section>
+
+      {/* Overlay for mobile sidebar */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
     </div>
   )
 }

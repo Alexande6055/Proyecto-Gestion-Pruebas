@@ -42,9 +42,28 @@ function App() {
   const queryClient = useQueryClient()
 
   const { session, setSession, logout } = useAuthStore()
-  const { sidebarOpen, setSidebarOpen, search, setSearch } = useUIStore()
+  const { sidebarOpen, setSidebarOpen, isMobile, setIsMobile, toggleSidebar, search, setSearch } = useUIStore()
   const requestStatusRef = useRef<Map<string, string>>(new Map())
   const notificationsReadyRef = useRef(false)
+  
+  // Handle responsive layout
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024
+      setIsMobile(mobile)
+      if (mobile) {
+        setSidebarOpen(false)
+      } else {
+        setSidebarOpen(true)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    // Initial check
+    handleResize()
+    
+    return () => window.removeEventListener('resize', handleResize)
+  }, [setIsMobile, setSidebarOpen])
   
   const { data: backendStatusResponse } = useBackendStatus()
   const backendStatus = backendStatusResponse ?? 'checking'
@@ -257,6 +276,8 @@ function App() {
           <MainLayout
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
+            isMobile={isMobile}
+            toggleSidebar={toggleSidebar}
             visibleViews={visibleViews}
             activeView={activeView}
             backendStatus={backendStatus}

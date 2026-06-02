@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
+  Menu,
 } from 'lucide-react'
 import { Badge, LoadingBadge } from '../common/Badge'
 import type { AuthSession, NotificationItem, ViewKey } from '../../types'
@@ -22,6 +23,8 @@ interface HeaderProps {
   notifications: NotificationItem[]
   onNotificationsAction: () => void
   handleLogout: () => void
+  isMobile: boolean
+  toggleSidebar: () => void
 }
 
 export function Header({
@@ -33,34 +36,52 @@ export function Header({
   notifications,
   onNotificationsAction,
   handleLogout,
+  isMobile,
+  toggleSidebar,
 }: HeaderProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const unreadCount = notifications.length
 
   return (
-    <header className="h-16 bg-white/80 backdrop-blur-md border-b border-night-100 flex items-center justify-between px-6 sticky top-0 z-30">
-      {/* Left: Breadcrumb + View title */}
+    <header className="h-16 bg-white/80 backdrop-blur-md border-b border-night-100 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30">
+      {/* Left: Hamburger (mobile) + Breadcrumb + View title */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-night-400 text-sm">
-          <span className="font-medium">Panel</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <span className="font-semibold text-night-700">{viewLabels[activeView]}</span>
+        {isMobile && (
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="p-2 rounded-lg text-night-400 hover:bg-night-100 hover:text-night-600 transition-colors lg:hidden"
+            aria-label="Abrir menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+        <div className="flex items-center gap-2 text-night-400 text-sm overflow-hidden whitespace-nowrap">
+          <span className="font-medium hidden xs:inline">Panel</span>
+          <ChevronRight className="w-3.5 h-3.5 hidden xs:inline" />
+          <span className="font-semibold text-night-700 truncate">{viewLabels[activeView]}</span>
         </div>
       </div>
 
       {/* Right: Status + Search + User */}
-      <div className="flex items-center gap-4">
-        {/* Backend Status */}
+      <div className="flex items-center gap-2 md:gap-4">
+        {/* Backend Status - minimized on mobile */}
         {backendStatus === 'checking' ? (
-          <LoadingBadge>Verificando backend</LoadingBadge>
+          <div className="hidden sm:block"><LoadingBadge>Verificando</LoadingBadge></div>
         ) : backendStatus === 'online' ? (
-          <Badge tone="ok" className="bg-uride-50 text-uride-700 border border-uride-200">
-            Backend online
-          </Badge>
+          <div className="flex items-center">
+             <div className="sm:hidden w-2.5 h-2.5 rounded-full bg-green-500 mr-2" title="Backend online" />
+             <Badge tone="ok" className="hidden sm:flex bg-uride-50 text-uride-700 border border-uride-200 text-xs">
+                Backend online
+             </Badge>
+          </div>
         ) : (
-          <Badge tone="danger" className="bg-red-50 text-red-700 border border-red-200">
-            Backend offline
-          </Badge>
+          <div className="flex items-center">
+            <div className="sm:hidden w-2.5 h-2.5 rounded-full bg-red-500 mr-2" title="Backend offline" />
+            <Badge tone="danger" className="hidden sm:flex bg-red-50 text-red-700 border border-red-200 text-xs">
+              Backend offline
+            </Badge>
+          </div>
         )}
 
         {/* Search */}

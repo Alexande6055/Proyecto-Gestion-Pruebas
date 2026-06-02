@@ -3,7 +3,7 @@ import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from '@react-go
 
 const containerStyle = {
   width: '100%',
-  height: '400px',
+  height: window.innerWidth < 640 ? '300px' : '400px',
   borderRadius: '0.5rem'
 };
 

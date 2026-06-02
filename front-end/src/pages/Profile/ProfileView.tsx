@@ -114,10 +114,10 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 px-4 sm:px-0">
 
       {/* HEADER */}
-      <section className="relative overflow-hidden rounded-uride bg-linear-to-r from-uride-500 to-uride-700 p-8 text-white">
+      <section className="relative overflow-hidden rounded-uride bg-linear-to-r from-uride-500 to-uride-700 p-6 sm:p-8 text-white">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
         </div>

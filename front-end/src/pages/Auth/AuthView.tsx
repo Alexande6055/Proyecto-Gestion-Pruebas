@@ -96,7 +96,7 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-uride overflow-hidden shadow-night-xl border border-night-200">
 
         {/* Hero Section */}
-        <section className="bg-linear-to-br from-uride-500 to-uride-700 p-8 sm:p-12 lg:p-16 flex flex-col justify-between text-white relative overflow-hidden">
+        <section className="bg-linear-to-br from-uride-500 to-uride-700 p-6 sm:p-12 lg:p-16 flex flex-col justify-between text-white relative overflow-hidden min-h-[300px] lg:min-h-full">
           {/* Decorative wave */}
           <div className="absolute inset-0 opacity-10 pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -106,36 +106,36 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
 
           <div className="relative z-10">
             {/* Brand */}
-            <div className="flex items-center gap-4 mb-12">
-              <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-uride-sm flex items-center justify-center border border-white/30">
-                <Car className="w-8 h-8 text-white" />
+            <div className="flex items-center gap-4 mb-8 lg:mb-12">
+              <div className="w-12 h-12 lg:w-14 lg:h-14 bg-white/20 backdrop-blur-sm rounded-uride-sm flex items-center justify-center border border-white/30">
+                <Car className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-extrabold tracking-tight">U-Ride</h1>
-                <p className="text-uride-100 text-sm font-medium">Comunidad estudiantil verificada</p>
+                <h1 className="text-xl lg:text-2xl font-extrabold tracking-tight">U-Ride</h1>
+                <p className="text-uride-100 text-xs lg:text-sm font-medium">Comunidad estudiantil verificada</p>
               </div>
             </div>
 
             {/* Hero Content */}
-            <div className="space-y-6">
-              <p className="text-uride-100 text-sm font-semibold uppercase tracking-widest">
+            <div className="space-y-4 lg:space-y-6">
+              <p className="text-uride-100 text-[10px] lg:text-sm font-semibold uppercase tracking-widest">
                 Transporte compartido
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold leading-tight">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
                 Coordina viajes seguros desde una sola interfaz.
               </h2>
-              <p className="text-uride-50/90 text-base leading-relaxed max-w-md">
+              <p className="text-uride-50/90 text-sm lg:text-base leading-relaxed max-w-md">
                 Acceso institucional, gestion de rutas, solicitudes, reputacion y reportes con una experience clara para web y movil.
               </p>
             </div>
           </div>
 
           {/* Highlights */}
-          <div className="relative z-10 mt-12 flex flex-wrap gap-3">
+          <div className="relative z-10 mt-8 lg:mt-12 flex flex-wrap gap-2">
             {['Correo institucional', 'Roles y trazabilidad', 'Reputacion comunitaria'].map((item) => (
               <span 
                 key={item}
-                className="inline-flex items-center px-4 py-2 bg-white/15 backdrop-blur-sm rounded-full text-sm font-medium border border-white/20"
+                className="inline-flex items-center px-3 py-1.5 lg:px-4 lg:py-2 bg-white/15 backdrop-blur-sm rounded-full text-[10px] lg:text-sm font-medium border border-white/20"
               >
                 {item}
               </span>
@@ -144,7 +144,7 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
         </section>
 
         {/* Auth Card */}
-        <section className="bg-white p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
+        <section className="bg-white p-6 sm:p-12 lg:p-16 flex flex-col justify-center">
           {/* Tabs */}
           <div className="flex gap-1 bg-night-100 rounded-uride-xs p-1 mb-8" role="tablist" aria-label="Autenticacion">
             <button
