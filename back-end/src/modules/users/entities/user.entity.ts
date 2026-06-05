@@ -70,7 +70,7 @@ export class User {
     type: 'decimal',
     precision: 2,
     scale: 1,
-    default: 0.0,
+    default: 5.0,
   })
   'reputacion_promedio': number;
 
