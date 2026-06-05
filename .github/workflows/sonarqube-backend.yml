@@ -48,13 +48,13 @@ jobs:
 
       - name: Descargar SonarQube Scanner CLI
         run: |
-          curl -sSLo sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
+          curl -sSLo sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-6.0.0.4432.zip
           unzip sonar-scanner-cli.zip
         working-directory: back-end
 
       - name: Analizar backend en SonarQube
         run: |
-          ./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner \
+          ./sonar-scanner-6.0.0.4432/bin/sonar-scanner \
             -Dsonar.projectKey=gestion_pruebas_backend \
             -Dsonar.projectName=gestion_pruebas_backend \
             -Dsonar.sources=src \
