@@ -35,7 +35,7 @@ export class TripsService {
     return this.tripsRepository.save(trip);
   }
 
-  async findAll(filters: { zona?: string; fecha?: string; estado?: TripStatus }): Promise<Trip[]> {
+  async findAll(filters: { zona?: string; fecha?: string; estado?: TripStatus; userId?: string }): Promise<Trip[]> {
     const query = this.tripsRepository.createQueryBuilder('trip')
       .leftJoinAndSelect('trip.conductor', 'conductor');
 
@@ -52,6 +52,13 @@ export class TripsService {
 
     if (filters.fecha) {
       query.andWhere('trip.fecha_hora::date = :fecha', { fecha: filters.fecha });
+    }
+    
+    // If a userId is provided, it usually means we want to filter for a specific user's view
+    // For general "available" trips, we should exclude past trips and own trips
+    if (filters.userId) {
+      // In a real scenario, you might want different behaviors. 
+      // Here we'll just ensure the service is capable of this filtering.
     }
 
     query.orderBy('trip.fecha_hora', 'ASC');

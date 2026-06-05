@@ -86,19 +86,22 @@ export function EntityView({ config, state, data, search, session, onCreated, ui
   // Filter data for selectors (e.g., only show active trips for requests)
   const filteredData = useMemo(() => {
     if (config.key === 'requests') {
+        const now = new Date();
         return {
             ...data,
             trips: {
                 ...data.trips,
                 rows: data.trips.rows.filter(trip => 
                     String(trip.estado) === 'abierto' && 
-                    Number(trip.cupos_disponibles) > 0
+                    Number(trip.cupos_disponibles) > 0 &&
+                    String(trip.conductor_id) !== String(session.user.id) &&
+                    new Date(String(trip.fecha_hora)) > now
                 )
             }
         }
     }
     return data;
-  }, [data, config.key]);
+  }, [data, config.key, session.user.id]);
 
   const onFormSubmit = async (formData: FieldValues) => {
     setSaving(true)
