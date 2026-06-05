@@ -1,0 +1,52 @@
+name: SonarQube Front-end
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  sonar-frontend:
+    runs-on: ubuntu-latest
+    env:
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Instalar dependencias
+        run: pnpm install
+        working-directory: front-end
+
+      - name: Construir front-end
+        run: pnpm build
+        working-directory: front-end
+
+      - name: Descargar SonarQube Scanner CLI
+        run: |
+          curl -sSLo sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
+          unzip sonar-scanner-cli.zip
+
+      - name: Analizar front-end en SonarQube
+        run: |
+          ./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner \
+            -Dsonar.projectKey=gestion_pruebas_frontend \
+            -Dsonar.projectName=gestion_pruebas_frontend \
+            -Dsonar.sources=src \
+            -Dsonar.exclusions=**/node_modules/**,android/** \
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
+            -Dsonar.login=${{ env.SONAR_TOKEN }}
+        working-directory: front-end
