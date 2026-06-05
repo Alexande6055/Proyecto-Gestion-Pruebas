@@ -1,4 +1,4 @@
-import { useState, type FormEventHandler } from 'react'
+import { useState, useEffect, type FormEventHandler } from 'react'
 import {
   User,
   Mail,
@@ -27,13 +27,14 @@ interface ProfileViewProps {
 
 export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
   const [formData, setFormData] = useState({
-    nombre: session.user.nombre,
+    nombre: '',
     carrera: '',
     zona_barrio: '',
     telefono: '',
     foto_url: '',
   })
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -51,6 +52,28 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
   const [passwordMessage, setPasswordMessage] = useState('')
   const [passwordError, setPasswordError] = useState('')
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const profile = await usersService.getProfile()
+        setFormData({
+          nombre: String(profile.nombre || ''),
+          carrera: String(profile.carrera || ''),
+          zona_barrio: String(profile.zona_barrio || ''),
+          telefono: String(profile.telefono || ''),
+          foto_url: String(profile.foto_url || ''),
+        })
+      } catch (err) {
+        console.error('Error fetching profile:', err)
+        setError('No se pudo cargar la información del perfil.')
+      } finally {
+        setInitialLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [])
+
   const handleSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault()
     setLoading(true)
@@ -58,11 +81,13 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
     setError('')
 
     try {
-      const payload = Object.fromEntries(
-        Object.entries(formData)
-          .map(([key, value]) => [key, value.trim()])
-          .filter(([, value]) => value),
-      )
+      // Filtrar el payload para no enviar campos vacíos o nulos
+      const payload: Record<string, string> = {}
+      if (formData.nombre) payload.nombre = formData.nombre.trim()
+      if (formData.carrera) payload.carrera = formData.carrera.trim()
+      if (formData.zona_barrio) payload.zona_barrio = formData.zona_barrio.trim()
+      if (formData.telefono) payload.telefono = formData.telefono.trim()
+      if (formData.foto_url) payload.foto_url = formData.foto_url.trim()
 
       await usersService.update(session.user.id, payload)
 
@@ -82,6 +107,15 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (initialLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <Loader2 className="w-12 h-12 text-uride-600 animate-spin" />
+        <p className="text-night-500 font-medium">Cargando tu perfil...</p>
+      </div>
+    )
   }
 
   const handlePasswordSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
@@ -207,8 +241,11 @@ export function ProfileView({ session, onSessionUpdate }: ProfileViewProps) {
                   </label>
                   <input
                     type="tel"
+                    pattern="[0-9]{10}"
+                    maxLength={10}
+                    title="El teléfono debe tener exactamente 10 dígitos numéricos"
                     value={formData.telefono}
-                    onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, telefono: e.target.value.replace(/\D/g, '') })}
                     className="input-uride"
                     placeholder="0987654321"
                   />
