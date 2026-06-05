@@ -28,6 +28,12 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'back-end/pnpm-lock.yaml'
 
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
       - name: Instalar dependencias
         run: pnpm install
         working-directory: back-end
