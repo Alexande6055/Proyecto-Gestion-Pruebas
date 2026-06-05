@@ -40,6 +40,7 @@ jobs:
         run: |
           curl -sSLo sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
           unzip sonar-scanner-cli.zip
+        working-directory: front-end
 
       - name: Analizar front-end en SonarQube
         run: |
