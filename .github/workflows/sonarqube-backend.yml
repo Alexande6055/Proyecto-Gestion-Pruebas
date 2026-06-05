@@ -29,10 +29,14 @@ jobs:
           cache-dependency-path: 'back-end/pnpm-lock.yaml'
 
       - name: Setup Java
+        id: setup-java
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '21'
+
+      - name: Check Java version
+        run: java -version
 
       - name: Instalar dependencias
         run: pnpm install
@@ -49,6 +53,9 @@ jobs:
         working-directory: back-end
 
       - name: Analizar backend en SonarQube
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
+          PATH: ${{ steps.setup-java.outputs.java-home }}/bin:${{ env.PATH }}
         run: |
           ./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner \
             -Dsonar.projectKey=gestion_pruebas_backend \
