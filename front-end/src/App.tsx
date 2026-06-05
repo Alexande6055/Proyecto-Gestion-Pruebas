@@ -32,7 +32,6 @@ const TripsView = lazy(() => import('./pages/Trips/TripsView'))
 const RequestsView = lazy(() => import('./pages/Requests/RequestsView'))
 const RatingsView = lazy(() => import('./pages/Ratings/RatingsView'))
 const ReportsView = lazy(() => import('./pages/Reports/ReportsView'))
-const AuditLogsView = lazy(() => import('./pages/AuditLogs/AuditLogsView'))
 const ProfileView = lazy(() => import('./pages/Profile/ProfileView'))
 const EntityView = lazy(() => import('./pages/Entity/EntityView'))
 
@@ -78,7 +77,7 @@ function App() {
 
   const visibleViews = useMemo(() => 
     (Object.keys(viewLabels) as ViewKey[]).filter((key) =>
-      isAdmin || !['users', 'audit_logs'].includes(key),
+      isAdmin || !['users'].includes(key),
     ), [isAdmin]
   )
 
@@ -88,7 +87,6 @@ function App() {
   const requestsQuery = useEntityData('requests', entityConfigs.requests.endpoint)
   const ratingsQuery = useEntityData('ratings', entityConfigs.ratings.endpoint)
   const reportsQuery = useEntityData('reports', entityConfigs.reports.endpoint)
-  const auditLogsQuery = useEntityData('audit_logs', isAdmin ? entityConfigs.audit_logs.endpoint : '')
 
   // Map queries to the data structure expected by views
   const data = useMemo<Record<ViewKey, EntityState>>(() => ({
@@ -98,9 +96,8 @@ function App() {
     requests: { rows: requestsQuery.data ?? [], loading: requestsQuery.isLoading, error: requestsQuery.error?.message ?? '' },
     ratings: { rows: ratingsQuery.data ?? [], loading: ratingsQuery.isLoading, error: ratingsQuery.error?.message ?? '' },
     reports: { rows: reportsQuery.data ?? [], loading: reportsQuery.isLoading, error: reportsQuery.error?.message ?? '' },
-    audit_logs: { rows: auditLogsQuery.data ?? [], loading: auditLogsQuery.isLoading, error: auditLogsQuery.error?.message ?? '' },
     profile: initialEntityState,
-  }), [usersQuery, tripsQuery, requestsQuery, ratingsQuery, reportsQuery, auditLogsQuery])
+  }), [usersQuery, tripsQuery, requestsQuery, ratingsQuery, reportsQuery])
 
   const notifications = useMemo<NotificationItem[]>(() => {
     if (!session) return []
@@ -296,11 +293,10 @@ function App() {
           <Route path="/requests" element={<RequestsView state={data.requests} data={data} session={session} onCreated={handleCreated} search={search} />} />
           <Route path="/ratings" element={<RatingsView state={data.ratings} data={data} session={session} onCreated={handleCreated} search={search} />} />
           <Route path="/reports" element={<ReportsView state={data.reports} data={data} session={session} onCreated={handleCreated} />} />
-          <Route path="/audit-logs" element={isAdmin ? <AuditLogsView state={data.audit_logs} data={data} session={session} onCreated={handleCreated} search={search} /> : <Navigate to="/" />} />
           
           {managedViews.map(key => {
             const path = `/${key.replace('_', '-')}`
-            if (['users', 'trips', 'requests', 'ratings', 'reports', 'audit_logs'].includes(key)) return null
+            if (['users', 'trips', 'requests', 'ratings', 'reports'].includes(key)) return null
             return (
               <Route 
                 key={key}

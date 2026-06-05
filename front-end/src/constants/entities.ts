@@ -16,17 +16,11 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     endpoint: '/users',
     createEndpoint: '/auth/register',
     columns: [
-      'correo_institucional',
       'nombre',
-      'carrera',
-      'foto_url',
-      'telefono',
-      'zona_barrio',
+      'correo_institucional',
       'rol',
       'reputacion_promedio',
-      'total_viajes',
       'estado',
-      'created_at',
     ],
     fields: [
       { key: 'correo_institucional', label: 'Correo institucional' },
@@ -50,9 +44,7 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
       'destino_zona',
       'fecha_hora',
       'cupos_disponibles',
-      'notas_reglas',
       'estado',
-      'created_at',
     ],
     fields: [
       { key: 'origen_zona', label: 'Origen zona' },
@@ -67,7 +59,7 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     title: 'Solicitudes',
     subtitle: 'Solicitudes de cupo realizadas por pasajeros.',
     endpoint: '/requests',
-    columns: ['viaje_id', 'pasajero_id', 'estado', 'fecha_solicitud'],
+    columns: ['viaje_id', 'pasajero_id', 'estado'],
     fields: [
       { key: 'viaje_id', label: 'Viaje disponible', kind: 'select', relation: 'trips' },
     ],
@@ -77,7 +69,7 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
     title: 'Calificaciones',
     subtitle: 'Evaluaciones entre usuarios despues de un viaje.',
     endpoint: '/ratings',
-    columns: ['viaje_id', 'calificado_id', 'puntuacion', 'comentario', 'created_at'],
+    columns: ['viaje_id', 'calificado_id', 'puntuacion'],
     fields: [
       { key: 'viaje_id', label: 'ID Viaje' },
       { key: 'calificado_id', label: 'ID Usuario Calificado' },
@@ -95,7 +87,6 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
       'viaje_id',
       'motivo',
       'estado',
-      'created_at',
     ],
     fields: [
       { key: 'reportado_id', label: 'ID Usuario Reportado' },
@@ -104,34 +95,16 @@ export const entityConfigs: Record<ViewKey, EntityConfig> = {
       { key: 'evidencia_url', label: 'Evidencia URL (opcional)' },
     ],
   },
-  audit_logs: {
-    key: 'audit_logs',
-    title: 'Auditoria',
-    subtitle: 'Trazabilidad de acciones importantes dentro del sistema.',
-    endpoint: '/audit_logs',
-    columns: ['usuario_id', 'accion', 'detalles', 'fecha_hora'],
-    fields: [
-      { key: 'usuario_id', label: 'Usuario', kind: 'select', relation: 'users' },
-      { key: 'accion', label: 'Accion' },
-      { key: 'detalles', label: 'Detalles', kind: 'textarea' },
-      { key: 'fecha_hora', label: 'Fecha y hora', kind: 'datetime-local' },
-    ],
-  },
   profile: {
     key: 'profile',
     title: 'Mi Perfil',
     subtitle: 'Informacion del usuario actual.',
     endpoint: '/profile',
     columns: [
-      'correo_institucional',
       'nombre',
-      'carrera',
-      'foto_url',
-      'telefono',
-      'zona_barrio',
+      'correo_institucional',
       'rol',
       'reputacion_promedio',
-      'total_viajes',
       'estado',
     ],
     fields: [
@@ -156,7 +129,6 @@ export const viewLabels: Record<ViewKey, string> = {
   requests: 'Solicitudes',
   ratings: 'Calificaciones',
   reports: 'Reportes',
-  audit_logs: 'Auditoria',
   profile: 'Mi Perfil',
 }
 
@@ -181,7 +153,7 @@ export const statusTone: Record<string, StatusTone> = {
   cancelado: 'danger',
 }
 
-export const managedViews: ViewKey[] = ['users', 'trips', 'requests', 'ratings', 'reports', 'audit_logs']
+export const managedViews: ViewKey[] = ['users', 'trips', 'requests', 'ratings', 'reports']
 
 export const initialEntityState = {
   rows: [],

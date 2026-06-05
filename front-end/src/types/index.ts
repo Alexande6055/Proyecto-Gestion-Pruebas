@@ -1,4 +1,4 @@
-export type ViewKey = 'dashboard' | 'users' | 'trips' | 'requests' | 'ratings' | 'reports' | 'audit_logs' | 'profile'
+export type ViewKey = 'dashboard' | 'users' | 'trips' | 'requests' | 'ratings' | 'reports' | 'profile'
 export type EntityValue = string | number | boolean | null | undefined | EntityRow | EntityRow[]
 
 export interface EntityRow {

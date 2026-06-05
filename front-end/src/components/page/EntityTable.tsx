@@ -20,19 +20,19 @@ export function EntityTable({
 }: EntityTableProps) {
   return (
     <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-night-200 scrollbar-track-transparent">
-      <table className="w-full min-w-[600px] md:min-w-full">
+      <table className="w-full text-xs">
         <thead>
-        <tr className="border-b border-night-100">
+        <tr className="border-b border-night-100 bg-night-50/50">
           {columns.map((column) => (
             <th
               key={column}
-              className="text-left px-4 py-3 text-[10px] font-bold text-night-400 uppercase tracking-wider"
+              className="text-left px-3 py-2.5 text-[10px] font-bold text-night-400 uppercase tracking-wider whitespace-nowrap"
             >
               {columnLabels?.[column] ?? column}
             </th>
           ))}
           {showActions && (
-            <th className="text-right px-4 py-3 text-[10px] font-bold text-night-400 uppercase tracking-wider">
+            <th className="text-right px-3 py-2.5 text-[10px] font-bold text-night-400 uppercase tracking-wider">
               acciones
             </th>
           )}
@@ -45,12 +45,12 @@ export function EntityTable({
             className="hover:bg-uride-50/30 transition-colors duration-150"
           >
             {columns.map((column) => (
-              <td key={column} className="px-4 py-3">
+              <td key={column} className="px-3 py-2.5 max-w-[200px] truncate">
                 {renderCell(row, column)}
               </td>
             ))}
             {showActions && (
-              <td className="px-4 py-3">{renderActions?.(row)}</td>
+              <td className="px-3 py-2.5 text-right">{renderActions?.(row)}</td>
             )}
           </tr>
         ))}

@@ -360,32 +360,32 @@ export function ReportsView({ state, data, session, onCreated }: ReportsViewProp
                       <Badge tone="neutral">{String(state.rows.length)}</Badge>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-white border-b border-night-100 text-[10px] font-bold text-night-400 uppercase">
+                    <table className="w-full text-left text-xs">
+                        <thead className="bg-night-50/50 border-b border-night-100 text-[10px] font-bold text-night-400 uppercase">
                             <tr>
-                                {isAdmin && <th className="px-6 py-4">Reportante</th>}
-                                <th className="px-6 py-4">Reportado</th>
-                                <th className="px-6 py-4">Motivo</th>
-                                <th className="px-6 py-4">Estado</th>
-                                <th className="px-6 py-4">Acción Tomada</th>
+                                {isAdmin && <th className="px-4 py-3">Reportante</th>}
+                                <th className="px-4 py-3">Reportado</th>
+                                <th className="px-4 py-3">Motivo</th>
+                                <th className="px-4 py-3">Estado</th>
+                                <th className="px-4 py-3">Acción Tomada</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-night-50">
+                        <tbody className="divide-y divide-night-100">
                             {(isAdmin ? state.rows : state.rows.filter(r => String(r.reportante_id) === String(session.user.id))).map(report => (
-                                <tr key={String(report.id)} className="bg-white hover:bg-night-50/30 transition-colors">
+                                <tr key={String(report.id)} className="bg-white hover:bg-uride-50/30 transition-colors">
                                     {isAdmin && (
-                                        <td className="px-6 py-4 text-xs text-night-600">
-                                            {String((report.reportante as any)?.nombre || report.reportante_id).slice(0, 15)}
+                                        <td className="px-4 py-3 text-[11px] text-night-600 truncate max-w-[120px]">
+                                            {String((report.reportante as any)?.nombre || report.reportante_id)}
                                         </td>
                                     )}
-                                    <td className="px-6 py-4 font-bold text-night-700">
-                                        {String((report.reportado as any)?.nombre || report.reportado_id).slice(0, 15)}
+                                    <td className="px-4 py-3 font-bold text-night-700 truncate max-w-[120px]">
+                                        {String((report.reportado as any)?.nombre || report.reportado_id)}
                                     </td>
-                                    <td className="px-6 py-4 text-xs text-night-500 max-w-xs truncate">{String(report.motivo)}</td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-4 py-3 text-night-500 max-w-xs truncate">{String(report.motivo)}</td>
+                                    <td className="px-4 py-3">
                                         <Badge tone={statusTone[String(report.estado)]}>{String(report.estado)}</Badge>
                                     </td>
-                                    <td className="px-6 py-4 text-[10px] text-night-400 font-medium max-w-xs italic">
+                                    <td className="px-4 py-3 text-[10px] text-night-400 font-medium max-w-[150px] truncate italic">
                                         {report.accion_tomada ? String(report.accion_tomada) : 'Pendiente de revisión'}
                                     </td>
                                 </tr>

@@ -7,7 +7,6 @@ import {
   ClipboardList,
   Star,
   MessageSquareWarning,
-  ScrollText,
   UserCircle,
   ChevronRight,
 } from 'lucide-react'
@@ -21,7 +20,6 @@ const viewIcons: Record<ViewKey, React.ElementType> = {
   requests: ClipboardList,
   ratings: Star,
   reports: MessageSquareWarning,
-  audit_logs: ScrollText,
   profile: UserCircle,
 }
 

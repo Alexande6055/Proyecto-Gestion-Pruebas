@@ -48,13 +48,11 @@ const config = {
   subtitle: 'Publicacion de rutas, cupos, reglas y estado del viaje.',
   endpoint: '/trips',
   columns: [
-    'id',
     'conductor_id',
     'origen_zona',
     'destino_zona',
     'fecha_hora',
     'cupos_disponibles',
-    'notas_reglas',
     'estado',
   ],
   fields: [
