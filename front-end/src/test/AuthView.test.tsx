@@ -20,7 +20,10 @@ vi.mock("../services", () => ({
 describe("AuthView", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        localStorage.clear();
+
+        if (typeof localStorage !== 'undefined') {
+            localStorage.clear();
+        }
     });
 
     test("debe renderizar la vista de login por defecto", () => {
@@ -120,66 +123,66 @@ describe("AuthView", () => {
         expect(screen.getByPlaceholderText(/ciudad jardin/i)).toBeInTheDocument();
     });
 
-   test("debe registrar una cuenta correctamente y volver al login", async () => {
-  const user = userEvent.setup();
+    test("debe registrar una cuenta correctamente y volver al login", async () => {
+        const user = userEvent.setup();
 
-  vi.mocked(authService.register).mockResolvedValueOnce({
-    message: "Usuario registrado correctamente",
-  } as any);
+        vi.mocked(authService.register).mockResolvedValueOnce({
+            message: "Usuario registrado correctamente",
+        } as any);
 
-  render(<AuthView onAuthenticated={vi.fn()} />);
+        render(<AuthView onAuthenticated={vi.fn()} />);
 
-  await user.click(screen.getByRole("button", { name: /registro/i }));
+        await user.click(screen.getByRole("button", { name: /registro/i }));
 
-  await user.type(
-    screen.getByPlaceholderText(/tu\.correo@universidad\.edu/i),
-    "nuevo@uta.edu.ec"
-  );
+        await user.type(
+            screen.getByPlaceholderText(/tu\.correo@universidad\.edu/i),
+            "nuevo@uta.edu.ec"
+        );
 
-  await user.type(
-    screen.getByPlaceholderText(/minimo 6 caracteres/i),
-    "123456"
-  );
+        await user.type(
+            screen.getByPlaceholderText(/minimo 6 caracteres/i),
+            "123456"
+        );
 
-  await user.type(
-    screen.getByPlaceholderText(/tu nombre completo/i),
-    "Nuevo Usuario"
-  );
+        await user.type(
+            screen.getByPlaceholderText(/tu nombre completo/i),
+            "Nuevo Usuario"
+        );
 
-  await user.type(
-    screen.getByPlaceholderText(/ingenieria de software/i),
-    "Software"
-  );
+        await user.type(
+            screen.getByPlaceholderText(/ingenieria de software/i),
+            "Software"
+        );
 
-  await user.type(
-    screen.getByPlaceholderText(/ciudad jardin/i),
-    "Huachi"
-  );
+        await user.type(
+            screen.getByPlaceholderText(/ciudad jardin/i),
+            "Huachi"
+        );
 
-  await user.type(
-    screen.getByPlaceholderText(/\+57 300 000 0000/i),
-    "0999999999"
-  );
+        await user.type(
+            screen.getByPlaceholderText(/\+57 300 000 0000/i),
+            "0999999999"
+        );
 
-  await user.click(screen.getByRole("button", { name: /crear cuenta/i }));
+        await user.click(screen.getByRole("button", { name: /crear cuenta/i }));
 
-  await waitFor(() => {
-    expect(authService.register).toHaveBeenCalledWith({
-      correo_institucional: "nuevo@uta.edu.ec",
-      password: "123456",
-      nombre: "Nuevo Usuario",
-      carrera: "Software",
-      zona_barrio: "Huachi",
-      telefono: "0999999999",
+        await waitFor(() => {
+            expect(authService.register).toHaveBeenCalledWith({
+                correo_institucional: "nuevo@uta.edu.ec",
+                password: "123456",
+                nombre: "Nuevo Usuario",
+                carrera: "Software",
+                zona_barrio: "Huachi",
+                telefono: "0999999999",
+            });
+        });
+
+        await waitFor(() => {
+            expect(
+                screen.getByRole("heading", { name: /iniciar sesion/i })
+            ).toBeInTheDocument();
+        });
     });
-  });
-
-  await waitFor(() => {
-    expect(
-      screen.getByRole("heading", { name: /iniciar sesion/i })
-    ).toBeInTheDocument();
-  });
-});
 
     test("debe mostrar mensaje de error cuando falla el login", async () => {
         const user = userEvent.setup();
