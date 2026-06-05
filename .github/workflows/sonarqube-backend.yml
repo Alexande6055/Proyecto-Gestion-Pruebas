@@ -20,12 +20,14 @@ jobs:
         uses: pnpm/action-setup@v2
         with:
           version: 8
+          working-directory: back-end  # Add this line
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
+          cache-dependency-path: 'back-end/pnpm-lock.yaml'  # Add this line
 
       - name: Instalar dependencias
         run: pnpm install
@@ -49,4 +51,4 @@ jobs:
             -Dsonar.exclusions=**/node_modules/** \
             -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
             -Dsonar.login=${{ env.SONAR_TOKEN }}
-        working-directory: back-end
+          working-directory: back-end
