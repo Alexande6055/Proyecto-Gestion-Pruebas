@@ -1,0 +1,162 @@
+import type { EntityConfig, StatusTone, ViewKey } from '../types'
+
+export const entityConfigs: Record<ViewKey, EntityConfig> = {
+  dashboard: {
+    key: 'dashboard',
+    title: 'Resumen',
+    subtitle: 'Indicadores calculados con la informacion entregada por el backend.',
+    endpoint: '',
+    columns: [],
+    fields: [],
+  },
+  users: {
+    key: 'users',
+    title: 'Usuarios',
+    subtitle: 'Registro institucional, seguridad, rol, reputacion y estado.',
+    endpoint: '/users',
+    createEndpoint: '/auth/register',
+    columns: [
+      'nombre',
+      'correo_institucional',
+      'rol',
+      'reputacion_promedio',
+      'estado',
+    ],
+    fields: [
+      { key: 'correo_institucional', label: 'Correo institucional' },
+      { key: 'password', label: 'Contrasena' },
+      { key: 'nombre', label: 'Nombre' },
+      { key: 'carrera', label: 'Carrera' },
+      { key: 'foto_url', label: 'Foto URL' },
+      { key: 'telefono', label: 'Telefono' },
+      { key: 'zona_barrio', label: 'Zona o barrio' },
+      { key: 'estado', label: 'Estado', kind: 'select', options: ['activo', 'suspendido', 'advertido'] },
+    ],
+  },
+  trips: {
+    key: 'trips',
+    title: 'Viajes',
+    subtitle: 'Publicacion de rutas, cupos, reglas y estado del viaje.',
+    endpoint: '/trips',
+    columns: [
+      'conductor_id',
+      'origen_zona',
+      'destino_zona',
+      'fecha_hora',
+      'cupos_disponibles',
+      'estado',
+    ],
+    fields: [
+      { key: 'origen_zona', label: 'Origen zona' },
+      { key: 'destino_zona', label: 'Destino zona' },
+      { key: 'fecha_hora', label: 'Fecha y hora', kind: 'datetime-local' },
+      { key: 'cupos_disponibles', label: 'Cupos disponibles', kind: 'number' },
+      { key: 'notas_reglas', label: 'Notas y reglas', kind: 'textarea' },
+    ],
+  },
+  requests: {
+    key: 'requests',
+    title: 'Solicitudes',
+    subtitle: 'Solicitudes de cupo realizadas por pasajeros.',
+    endpoint: '/requests',
+    columns: ['viaje_id', 'pasajero_id', 'estado'],
+    fields: [
+      { key: 'viaje_id', label: 'Viaje disponible', kind: 'select', relation: 'trips' },
+    ],
+  },
+  ratings: {
+    key: 'ratings',
+    title: 'Calificaciones',
+    subtitle: 'Evaluaciones entre usuarios despues de un viaje.',
+    endpoint: '/ratings',
+    columns: ['viaje_id', 'calificado_id', 'puntuacion'],
+    fields: [
+      { key: 'viaje_id', label: 'ID Viaje' },
+      { key: 'calificado_id', label: 'ID Usuario Calificado' },
+      { key: 'puntuacion', label: 'Puntuacion (1-5)', kind: 'number' },
+      { key: 'comentario', label: 'Comentario', kind: 'textarea' },
+    ],
+  },
+  reports: {
+    key: 'reports',
+    title: 'Reportes',
+    subtitle: 'Incidentes reportados, evidencia, estado y accion tomada.',
+    endpoint: '/reports',
+    columns: [
+      'reportado_id',
+      'viaje_id',
+      'motivo',
+      'estado',
+    ],
+    fields: [
+      { key: 'reportado_id', label: 'ID Usuario Reportado' },
+      { key: 'viaje_id', label: 'ID Viaje (opcional)' },
+      { key: 'motivo', label: 'Motivo', kind: 'textarea' },
+      { key: 'evidencia_url', label: 'Evidencia URL (opcional)' },
+    ],
+  },
+  profile: {
+    key: 'profile',
+    title: 'Mi Perfil',
+    subtitle: 'Informacion del usuario actual.',
+    endpoint: '/profile',
+    columns: [
+      'nombre',
+      'correo_institucional',
+      'rol',
+      'reputacion_promedio',
+      'estado',
+    ],
+    fields: [
+      { key: 'correo_institucional', label: 'Correo institucional' },
+      { key: 'nombre', label: 'Nombre' },
+      { key: 'carrera', label: 'Carrera' },
+      { key: 'foto_url', label: 'Foto URL' },
+      { key: 'telefono', label: 'Telefono' },
+      { key: 'zona_barrio', label: 'Zona o barrio' },
+      { key: 'rol', label: 'Rol', kind: 'select', options: ['estudiante', 'admin'] },
+      { key: 'reputacion_promedio', label: 'Reputacion promedio', kind: 'number' },
+      { key: 'total_viajes', label: 'Total viajes', kind: 'number' },
+      { key: 'estado', label: 'Estado', kind: 'select', options: ['activo', 'suspendido', 'advertido'] },
+    ],
+  },
+}
+
+export const viewLabels: Record<ViewKey, string> = {
+  dashboard: 'Resumen',
+  users: 'Usuarios',
+  trips: 'Viajes',
+  requests: 'Solicitudes',
+  ratings: 'Calificaciones',
+  reports: 'Reportes',
+  profile: 'Mi Perfil',
+}
+
+export const statusTone: Record<string, StatusTone> = {
+  activo: 'ok',
+  estudiante: 'ok',
+  admin: 'info',
+  publicado: 'ok',
+  abierto: 'ok',
+  aceptada: 'ok',
+  finalizado: 'ok',
+  resuelto: 'ok',
+  revisado: 'info',
+  advertido: 'warning',
+  completo: 'info',
+  pendiente: 'warning',
+  'en revision': 'info',
+  'en curso': 'info',
+  suspendido: 'danger',
+  rechazada: 'danger',
+  cancelada: 'danger',
+  cancelado: 'danger',
+}
+
+export const managedViews: ViewKey[] = ['users', 'trips', 'requests', 'ratings', 'reports']
+
+export const initialEntityState = {
+  rows: [],
+  loading: true,
+  error: '',
+}
