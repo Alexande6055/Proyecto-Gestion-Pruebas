@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ForbiddenException } from '@nestjs/common';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 import { ReportStatus } from './entities/report.entity';
@@ -47,13 +48,14 @@ describe('ReportsController', () => {
         estado: ReportStatus.PENDIENTE,
       },
     ];
+    const req = { user: { userId: REPORTANTE_ID, role: 'admin' } };
 
     mockReportsService.findAll.mockResolvedValue(reports);
 
-    const result = await controller.findAll();
+    const result = await controller.findAll(req);
 
     expect(result).toEqual(reports);
-    expect(mockReportsService.findAll).toHaveBeenCalled();
+    expect(mockReportsService.findAll).toHaveBeenCalledWith(req.user);
   });
 
   it('debería crear un reporte usando reportadoId y viajeId', async () => {
@@ -127,13 +129,14 @@ describe('ReportsController', () => {
       estado: ReportStatus.RESUELTO,
       accion_tomada: 'Penalización aplicada',
     };
+    const req = { user: { role: 'admin' } };
 
     mockReportsService.manageReport.mockResolvedValue(managedReport);
 
     const result = await controller.manageReport(VALID_REPORT_ID, {
       decision: 'aceptar',
       actionTaken: 'Penalización aplicada',
-    });
+    }, req);
 
     expect(result).toEqual(managedReport);
     expect(mockReportsService.manageReport).toHaveBeenCalledWith(
@@ -143,19 +146,34 @@ describe('ReportsController', () => {
     );
   });
 
+  it('debería lanzar ForbiddenException si un estudiante intenta gestionar un reporte', async () => {
+    const req = { user: { role: 'estudiante' } };
+
+    let error;
+    try {
+      await controller.manageReport(VALID_REPORT_ID, { decision: 'aceptar' }, req);
+    } catch (e) {
+      error = e;
+    }
+    
+    expect(error).toBeInstanceOf(ForbiddenException);
+    expect(error.message).toBe('Solo un administrador puede gestionar reportes');
+  });
+
   it('debería gestionar reporte rechazado', async () => {
     const managedReport = {
       id: VALID_REPORT_ID,
       estado: ReportStatus.RECHAZADO,
       accion_tomada: 'No procede',
     };
+    const req = { user: { role: 'admin' } };
 
     mockReportsService.manageReport.mockResolvedValue(managedReport);
 
     const result = await controller.manageReport(VALID_REPORT_ID, {
       decision: 'rechazar',
       actionTaken: 'No procede',
-    });
+    }, req);
 
     expect(result).toEqual(managedReport);
     expect(mockReportsService.manageReport).toHaveBeenCalledWith(

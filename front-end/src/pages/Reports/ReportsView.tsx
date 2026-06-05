@@ -37,7 +37,8 @@ export function ReportsView({ state, data, session, onCreated }: ReportsViewProp
         myAcceptedReservations.forEach(req => {
             const trip = data.trips.rows.find(t => String(t.id) === String(req.viaje_id));
             if (trip) {
-                const conductor = data.users.rows.find(u => String(u.id) === String(trip.conductor_id));
+                // Usar la relación 'conductor' que ya viene en el objeto trip
+                const conductor = (trip as any).conductor;
                 if (conductor) {
                     results.push({
                         id: String(conductor.id),
@@ -45,6 +46,20 @@ export function ReportsView({ state, data, session, onCreated }: ReportsViewProp
                         type: 'conductor',
                         trip
                     });
+                } else {
+                    // Fallback si por alguna razón no está la relación pero sí el ID
+                    const conductorId = trip.conductor_id || (trip as any).conductorId;
+                    if (conductorId) {
+                      const user = data.users.rows.find(u => String(u.id) === String(conductorId));
+                      if (user) {
+                        results.push({
+                          id: String(user.id),
+                          nombre: String(user.nombre),
+                          type: 'conductor',
+                          trip
+                        });
+                      }
+                    }
                 }
             }
         });
@@ -58,7 +73,8 @@ export function ReportsView({ state, data, session, onCreated }: ReportsViewProp
             );
             
             passengers.forEach(req => {
-                const user = data.users.rows.find(u => String(u.id) === String(req.pasajero_id));
+                // Usar la relación 'pasajero' que ya viene en el objeto request
+                const user = (req as any).pasajero;
                 if (user) {
                     results.push({
                         id: String(user.id),
@@ -66,6 +82,20 @@ export function ReportsView({ state, data, session, onCreated }: ReportsViewProp
                         type: 'pasajero',
                         trip
                     });
+                } else {
+                    // Fallback si no está la relación
+                    const pasajeroId = req.pasajero_id || (req as any).pasajeroId;
+                    if (pasajeroId) {
+                      const u = data.users.rows.find(item => String(item.id) === String(pasajeroId));
+                      if (u) {
+                        results.push({
+                          id: String(u.id),
+                          nombre: String(u.nombre),
+                          type: 'pasajero',
+                          trip
+                        });
+                      }
+                    }
                 }
             });
         });

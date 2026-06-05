@@ -14,9 +14,17 @@ export class ReportsService {
     private requestsGateway: RequestsGateway,
   ) {}
 
-  async findAll(): Promise<Report[]> {
+  async findAll(user: { userId: string, role: string }): Promise<Report[]> {
+    const where = user.role === 'admin' 
+      ? {} 
+      : [
+          { reportanteId: user.userId },
+          { reportadoId: user.userId }
+        ];
+        
     return this.reportsRepository.find({
-      relations: ['reportante', 'reportado', 'viaje'],
+      where,
+      relations: ['reportante', 'reportado', 'viaje', 'viaje.conductor'],
       order: { created_at: 'DESC' },
     });
   }

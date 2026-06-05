@@ -70,14 +70,35 @@ describe('ReportsService', () => {
 
   it('debería listar reportes', async () => {
     const reports = [pendingReport];
+    const user = { userId: REPORTANTE_ID, role: 'admin' };
 
     mockReportsRepository.find.mockResolvedValue(reports);
 
-    const result = await service.findAll();
+    const result = await service.findAll(user);
 
     expect(result).toEqual(reports);
     expect(mockReportsRepository.find).toHaveBeenCalledWith({
-      relations: ['reportante', 'reportado', 'viaje'],
+      where: {},
+      relations: ['reportante', 'reportado', 'viaje', 'viaje.conductor'],
+      order: { created_at: 'DESC' },
+    });
+  });
+
+  it('debería listar solo reportes propios si no es admin', async () => {
+    const reports = [pendingReport];
+    const user = { userId: REPORTANTE_ID, role: 'estudiante' };
+
+    mockReportsRepository.find.mockResolvedValue(reports);
+
+    const result = await service.findAll(user);
+
+    expect(result).toEqual(reports);
+    expect(mockReportsRepository.find).toHaveBeenCalledWith({
+      where: [
+        { reportanteId: REPORTANTE_ID },
+        { reportadoId: REPORTANTE_ID }
+      ],
+      relations: ['reportante', 'reportado', 'viaje', 'viaje.conductor'],
       order: { created_at: 'DESC' },
     });
   });
