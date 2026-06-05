@@ -68,6 +68,7 @@ export class AuthService {
     });
 
     if (!response.ok) {
+      console.log(response);
       const errorText = await response.text().catch(() => 'No response body');
       throw new InternalServerErrorException(
         `Error al enviar correo de activacion: ${response.status} ${response.statusText} - ${errorText}`,
