@@ -1,13 +1,33 @@
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy only dependency files to leverage Docker cache
+COPY pnpm-lock.yaml ./
+COPY package.json ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code and build
+COPY . .
+RUN pnpm build
+
+# Production stage
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies, build and run in production mode
-COPY package.json package-lock.json* pnpm-lock.yaml* ./
-COPY . .
+RUN npm install -g pnpm
 
-RUN npm install
-RUN npm run build
+# Copy only production dependencies and build files
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./
 
 EXPOSE 3000
-CMD ["npm", "run", "start:prod"]
+
+CMD ["pnpm", "start:prod"]

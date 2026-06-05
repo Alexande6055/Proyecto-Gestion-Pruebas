@@ -5,23 +5,58 @@ services:
     image: postgres:16
     container_name: gestion_pruebas_db
     restart: always
-
     environment:
       POSTGRES_DB: g_pruebas
       POSTGRES_USER: pruebas
       POSTGRES_PASSWORD: adb123*@
-
     ports:
       - "5454:5432"
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
     networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./back-end
+      dockerfile: Dockerfile
+    container_name: gestion_pruebas_backend
+    restart: always
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: pruebas
+      DB_PASSWORD: adb123*@
+      DB_NAME: g_pruebas
+      DB_SYNCHRONIZE: "true"
+      DB_SSL: "false"
+      JWT_SECRET: "development_secret_key" # Replace with actual secret in production
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:3000
+    container_name: gestion_pruebas_frontend
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
       - backend
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
 
 networks:
-  backend:
+  app-network:
+    driver: bridge
