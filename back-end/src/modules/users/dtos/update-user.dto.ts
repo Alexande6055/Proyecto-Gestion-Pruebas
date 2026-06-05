@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsUrl, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsUrl, IsEnum, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { UserStatus } from '../entities/user.entity';
 
@@ -22,6 +22,9 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  @Matches(/^[0-9]{10}$/, {
+    message: 'El teléfono debe tener exactamente 10 dígitos numéricos',
+  })
   telefono?: string;
 
   @ApiProperty({ required: false })

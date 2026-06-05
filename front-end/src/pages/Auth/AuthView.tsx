@@ -202,10 +202,12 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
                 <input
                   type="email"
                   required
+                  pattern="[a-z0-9._%+-]+@uta\.edu\.ec$"
+                  title="El correo debe ser del dominio @uta.edu.ec"
                   value={formData.correo_institucional ?? ''}
                   onChange={(event) => updateField('correo_institucional', event.target.value)}
                   className="input-uride"
-                  placeholder="tu.correo@universidad.edu"
+                  placeholder="usuario@uta.edu.ec"
                 />
               </div>
             )}
@@ -316,10 +318,13 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
                   </label>
                   <input
                     type="tel"
+                    pattern="[0-9]{10}"
+                    maxLength={10}
+                    title="El teléfono debe tener exactamente 10 dígitos numéricos"
                     value={formData.telefono ?? ''}
-                    onChange={(event) => updateField('telefono', event.target.value)}
+                    onChange={(event) => updateField('telefono', event.target.value.replace(/\D/g, ''))}
                     className="input-uride"
-                    placeholder="+57 300 000 0000"
+                    placeholder="0987654321"
                   />
                 </div>
               </>

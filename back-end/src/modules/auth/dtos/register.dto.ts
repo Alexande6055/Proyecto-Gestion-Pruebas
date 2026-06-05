@@ -39,5 +39,8 @@ export class RegisterDto {
   })
   @IsOptional()
   @IsString()
+  @Matches(/^[0-9]{10}$/, {
+    message: 'El teléfono debe tener exactamente 10 dígitos numéricos',
+  })
   telefono?: string;
 }
