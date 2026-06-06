@@ -47,7 +47,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, isMobile, visibleViews }:
         </div>
         {(sidebarOpen || isMobile) && (
           <div className="overflow-hidden">
-            <h1 className="text-lg font-extrabold text-night-900 tracking-tight leading-none">U-Ride</h1>
+            <h1 className="text-lg font-extrabold text-night-900 tracking-tight leading-none">U-RideEEE</h1>
             <p className="text-[10px] text-night-400 font-medium uppercase tracking-wider">Gestion de viajes</p>
           </div>
         )}
