@@ -1,0 +1,242 @@
+\documentclass{article}
+
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[letterpaper,top=2cm,bottom=4cm,left=2.5cm,right=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+
+\pagestyle{fancy}
+\fancyhf{}
+\setlength{\headheight}{70pt}
+\fancyhead[C]{%
+    \begin{minipage}[c]{2.5cm}
+        \centering
+        \includegraphics[width=2.2cm]{imagenes/uta.png}
+    \end{minipage}%
+    \hfill
+    \begin{minipage}[c]{8cm}
+        \centering
+        \small {\textbf{UNIVERSIDAD TECNICA DE AMBATO}} \\[0.1cm]
+        \scriptsize \textit{FACULTAD DE INGENIERIA EN SISTEMAS ELECTRONICA E INDUSTRIAL} \\[0.1cm]
+        \scriptsize \textbf{CARRERA DE SOFTWARE} \\[0.1cm]
+        \scriptsize \textbf{CICLO ACADEMICO: ENERO - JULIO 2026}
+    \end{minipage}%
+    \hfill
+    \begin{minipage}[c]{2.5cm}
+        \centering
+        \includegraphics[width=2.2cm]{imagenes/fisei.png}
+    \end{minipage}%
+}
+\fancyfoot[C]{\thepage}
+
+\newcommand{\estadoOK}{\textcolor{green!50!black}{Aprobado}}
+\newcommand{\estadoObs}{\textcolor{orange!80!black}{Observado}}
+\newcommand{\estadoFail}{\textcolor{red!70!black}{No ejecutado / Fallido}}
+\renewcommand{\arraystretch}{1.18}
+
+\begin{document}
+\begin{center}
+    {\large \textbf{INFORME DE GUIA PRACTICA}}\\[0.2cm]
+\end{center}
+
+\section{Portada}
+\begin{flushleft}
+    \begin{tabular}{>{\bfseries}p{7cm} p{10cm}}
+        Tema:                              & Diseño y ejecución de pruebas.                   \\
+        Unidad de Organizacion Curricular: & Profesional                                      \\
+        Nivel y Paralelo:                  & 6 - A.                                           \\
+        Alumnos participantes:             & Hurtado Torres Christian Alexis.                 \\
+                                           & Punina Ortiz Eduardo Israel                      \\
+                                           & Silva Barrionuevo Melanie Katiuska               \\
+                                           & Tasinchano Tite Audi Alexander.                  \\
+        Asignatura:                        & Gestion de pruebas e implementación de software. \\
+        Docente:                           & Ing. Leonardo Torres, Mg.                        \\
+    \end{tabular}
+\end{flushleft}
+
+\section{Informe de guia practica}
+
+\subsection{Objetivos}
+\subsubsection{General}
+Realizar el analisis, diseno, preparacion, ejecucion y documentacion de pruebas del sistema U-Ride, con el fin de verificar el cumplimiento de los requerimientos funcionales y no funcionales definidos para la aplicacion.
+
+\subsubsection{Especificos}
+\begin{itemize}[leftmargin=*]
+    \item Identificar las funcionalidades criticas del sistema a partir de la documentacion y del codigo fuente.
+    \item Elaborar casos de prueba con entradas, acciones, resultados esperados y criterios de aceptacion.
+    \item Ejecutar las pruebas disponibles, registrar incidentes y generar evidencias en formato PDF.
+\end{itemize}
+
+\subsection{Modalidad}
+Presencial
+\subsection{Tiempo de duracion}
+Presenciales: 4h.\\
+No presenciales: 0h.
+
+\subsection{Instrucciones}
+En base a los requerimientos definidos para el desarrollo del sistema realice lo siguiente:
+\begin{itemize}[leftmargin=*]
+    \item Análisis de requisitos: revisar la documentación del sistema para identificar qué funcionalidades deben probarse.
+    \item Diseño de pruebas: elaborar los casos de prueba especificando entradas, acciones, resultados esperados y criterios de aceptación.
+    \item Preparación del entorno: asegúrese de contar con los datos de prueba y el ambiente configurado.
+    \item Ejecución de pruebas: realizar las pruebas según lo planificado, registrando los resultados obtenidos.
+    \item Registro de incidentes: documentar cualquier error o comportamiento inesperado en un reporte de defectos.
+    \item Verificación de resultados: comparar los resultados reales con los esperados y concluir si las pruebas fueron exitosas.
+    \item Entrega de evidencias: generar un documento en formato pdf en base al formato indicado.
+\end{itemize}
+
+\subsection{Listado de equipos, materiales y recursos}
+\textbf{Equipos y materiales empleados:}
+\begin{itemize}[leftmargin=*]
+    \item Proyecto local: \texttt{Proyecto-Gestion-Pruebas}.
+    \item Backend NestJS con TypeScript, TypeORM y PostgreSQL.
+    \item Frontend React con Vite, TypeScript y Tailwind.
+    \item Docker Compose para base de datos PostgreSQL.
+    \item Jest para pruebas unitarias y e2e.
+\end{itemize}
+
+\textbf{TAC empleados en la guia practica:}
+\begin{itemize}[leftmargin=*]
+    \item[$\checkmark$] Aplicaciones educativas y herramientas de desarrollo.
+    \item[$\checkmark$] Inteligencia Artificial como apoyo para organizacion del informe.
+    \item[$\checkmark$] Laboratorio local de pruebas con Node.js, NestJS, React y PostgreSQL.
+\end{itemize}
+
+
+
+\subsection{Resultados obtenidos}
+
+\subsubsection{Descripcion del sistema}
+
+U-Ride es una plataforma web diseñada para facilitar la coordinación de viajes compartidos entre estudiantes de una misma institución educativa. El sistema permite a los usuarios registrarse mediante correo institucional, publicar viajes, buscar rutas disponibles y solicitar participación en viajes publicados por otros estudiantes.
+
+La plataforma incorpora mecanismos de autenticación y autorización mediante JWT, gestión de perfiles de usuario, administración de solicitudes de viaje, sistema de calificaciones y reportes de conducta. Además, incluye funcionalidades administrativas para el seguimiento de incidencias y control del cumplimiento de las normas de convivencia dentro de la comunidad.
+
+La solución está compuesta por un backend desarrollado con NestJS y PostgreSQL, así como una interfaz web desarrollada con React y Vite, permitiendo una experiencia moderna y adaptable a dispositivos móviles.
+
+\subsubsection{Analisis de requisitos}
+
+El análisis de requisitos se realizó tomando como referencia la documentación funcional y técnica del proyecto U-Ride. Se identificaron las entidades principales del sistema: Usuario, Viaje, Solicitud, Participacion, Calificacion, Reporte y Log de Trazabilidad, las cuales soportan los procesos de publicación de viajes, gestión de solicitudes, control de reputación y administración de incidencias.
+
+Además, se revisaron las reglas de negocio definidas para la aplicación, entre ellas la validación mediante correo institucional, la imposibilidad de solicitar un viaje propio, el control de cupos disponibles, el uso de roles mediante JWT y la gestión de suspensiones administrativas.
+
+A partir de este análisis se determinaron los requisitos funcionales y no funcionales que debían ser validados mediante los casos de prueba descritos a continuación.
+\begin{longtable}{p{1.2cm} p{6.2cm} p{6.8cm}}
+    \toprule
+    \textbf{Req.} & \textbf{Funcionalidad a probar}                       & \textbf{Criterio de aceptacion principal}                                                           \\
+    \midrule
+    RF1           & Registro e inicio de sesion con correo institucional. & El sistema valida credenciales, correo institucional, contrasena y emite JWT para usuarios validos. \\
+    RF2           & Gestion de perfil.                                    & El usuario puede consultar y actualizar datos como nombre, carrera, telefono y zona.                \\
+    RF3           & Publicacion de viajes.                                & Un conductor autenticado registra origen, destino, fecha, cupos y reglas.                           \\
+    RF4           & Busqueda y filtrado de viajes.                        & Se listan viajes filtrables por zona, fecha y disponibilidad.                                       \\
+    RF5           & Solicitud para unirse a viaje.                        & Un pasajero autenticado puede crear una solicitud pendiente.                                        \\
+    RF6           & Gestion de solicitudes.                               & El conductor acepta o rechaza solicitudes de sus viajes.                                            \\
+    RF7           & Confirmacion de participacion.                        & Al aceptar solicitud se registra el pasajero confirmado y se actualizan cupos.                      \\
+    RF8           & Calificaciones y resenas.                             & Despues de finalizar un viaje se permite calificar con puntuacion de 1 a 5.                         \\
+    RF9           & Reglas minimas de seguridad.                          & Las reglas/notas del viaje son visibles antes de confirmar participacion.                           \\
+    RF10          & Reportes de conducta indebida.                        & El usuario puede registrar motivo y evidencia opcional.                                             \\
+    RF11          & Administracion basica.                                & El administrador revisa reportes y aplica acciones.                                                 \\
+    RNF1          & Seguridad.                                            & Contrasenas cifradas, roles y rutas protegidas con JWT.                                             \\
+    RNF2          & Privacidad.                                           & La ubicacion se maneja por zona/barrio, no por direccion exacta publica.                            \\
+    RNF3          & Usabilidad.                                           & Interfaz sencilla, responsive y apta para uso movil.                                                \\
+    RNF4          & Trazabilidad.                                         & Eventos clave quedan registrados o son verificables mediante modulos de auditoria.                  \\
+    \bottomrule
+\end{longtable}
+
+\subsubsection{Diseno de pruebas}
+\begin{longtable}{p{1.2cm} p{2.2cm} p{3.2cm} p{3.8cm} p{4.0cm}}
+    \toprule
+    \textbf{ID} & \textbf{Modulo} & \textbf{Entradas}                                           & \textbf{Acciones}                            & \textbf{Resultado esperado / aceptacion}            \\
+    \midrule
+    CP01        & Autenticacion   & Correo institucional y contrasena valida.                   & Enviar POST de login.                        & Respuesta exitosa con token JWT y datos de usuario. \\
+    CP02        & Autenticacion   & Credenciales incorrectas, correo invalido o body vacio.     & Enviar POST de login con datos invalidos.    & Respuesta 400/401 sin token.                        \\
+    CP03        & Perfil          & Token valido y datos actualizados.                          & Consultar y actualizar perfil.               & Datos persistidos y visibles para el usuario.       \\
+    CP04        & Viajes          & Origen, destino, fecha/hora futura, cupos y reglas.         & Crear viaje autenticado.                     & Viaje creado en estado abierto.                     \\
+    CP05        & Viajes          & Filtros de zona, fecha y disponibilidad.                    & Consultar listado de viajes.                 & Listado coincide con filtros aplicados.             \\
+    CP06        & Solicitudes     & ID de viaje abierto y pasajero distinto del conductor.      & Crear solicitud de viaje.                    & Solicitud registrada en estado pendiente.           \\
+    CP07        & Solicitudes     & ID de solicitud pendiente.                                  & Aceptar o rechazar solicitud como conductor. & Estado actualizado y cupos ajustados si se acepta.  \\
+    CP08        & Calificaciones  & Viaje finalizado, calificador, calificado y puntuacion 1-5. & Crear calificacion.                          & Calificacion registrada y reputacion recalculada.   \\
+    CP09        & Reportes        & Reportante, reportado, motivo y evidencia opcional.         & Crear reporte.                               & Reporte queda en estado pendiente.                  \\
+    CP10        & Administracion  & Token admin y reporte existente.                            & Revisar reporte y aplicar accion.            & Estado del reporte actualizado con accion tomada.   \\
+    CP11        & Seguridad       & Token ausente o invalido.                                   & Acceder a endpoints protegidos.              & Respuesta 401 Unauthorized.                         \\
+    CP12        & Frontend        & Codigo fuente React/Vite.                                   & Ejecutar build productivo.                   & Compilacion sin errores TypeScript ni Vite.         \\
+    \bottomrule
+\end{longtable}
+
+\subsubsection{Preparacion del entorno}
+\begin{itemize}[leftmargin=*]
+    \item Dependencias backend disponibles en \texttt{back-end/node\_modules}.
+    \item Dependencias frontend disponibles en \texttt{front-end/node\_modules}.
+    \item Archivo \texttt{back-end/.env} configurado con \texttt{DB\_HOST=localhost}, \texttt{DB\_PORT=5454}, \texttt{DB\_USERNAME=pruebas}, \texttt{DB\_NAME=g\_pruebas}.
+    \item \texttt{docker-compose.yml} define un servicio PostgreSQL 16 con base \texttt{g\_pruebas} en el puerto local \texttt{5454}.
+    \item Datos de prueba esperados: usuarios estudiante/admin, viajes abiertos/finalizados, solicitudes pendientes, calificaciones y reportes. Para pruebas unitarias se usan mocks; para e2e se requiere PostgreSQL activo.
+\end{itemize}
+
+\subsubsection{Ejecucion de pruebas}
+\begin{longtable}{p{4.0cm} p{4.0cm} p{3.0cm} p{4.0cm}}
+    \toprule
+    \textbf{Prueba ejecutada} & \textbf{Comando}                                              & \textbf{Resultado} & \textbf{Evidencia obtenida}                                                          \\
+    \midrule
+    Pruebas unitarias backend & \texttt{npm test -- --runInBand} en \texttt{back-end}         & \estadoOK          & 16 suites aprobadas, 159 pruebas aprobadas, 0 snapshots, tiempo aproximado 21.716 s. \\
+    Build frontend            & \texttt{npm run build} en \texttt{front-end}                  & \estadoOK          & TypeScript y Vite compilaron correctamente. Se genero \texttt{dist/}.                \\
+    Pruebas e2e backend       & \texttt{npm run test:e2e -- --runInBand} en \texttt{back-end} & \estadoOK          & 7 suites aprobadas, 40 pruebas aprobadas, tiempo aproximado 10.492 s.                \\
+    \bottomrule
+\end{longtable}
+
+\subsubsection{Registro de incidentes}
+\begin{longtable}{p{1.2cm} p{3.0cm} p{3.4cm} p{4.5cm} p{2.4cm}}
+    \toprule
+    \textbf{ID} & \textbf{Tipo}             & \textbf{Descripcion}                                                                                                                                      & \textbf{Evidencia / causa probable}                                                                          & \textbf{Estado} \\
+    \midrule
+    INC01       & Ambiente de pruebas e2e   & Inicialmente las pruebas e2e no conectaban con PostgreSQL porque el servicio Docker no estaba disponible.                                                 & Se levanto PostgreSQL en \texttt{localhost:5454} y se repitio la ejecucion.                                  & Cerrado         \\
+    INC02       & Configuracion JWT         & Los tokens de prueba podian expirar rapidamente porque \texttt{JWT\_EXPIRES\_IN=1d} se interpretaba con \texttt{parseInt}.                                & Se corrigio la configuracion para conservar el valor \texttt{1d}.                                            & Cerrado         \\
+    INC03       & Rutas/expectativas e2e    & Algunos tests esperaban estados que no correspondian al comportamiento real: \texttt{/reports} protegido por JWT y \texttt{/audit\_logs} no implementado. & Se actualizaron expectativas: \texttt{/reports} sin token devuelve 401 y \texttt{/audit\_logs} devuelve 404. & Cerrado         \\
+    INC04       & Advertencias de ejecucion & Durante e2e aparecen advertencias de \texttt{pg} sobre consultas concurrentes y un aviso tardio de cierre de Jest.                                        & No bloquean la ejecucion: la bateria e2e finaliza con 40/40 pruebas aprobadas.                               & Observado       \\
+    \bottomrule
+\end{longtable}
+
+\subsubsection{Verificacion de resultados}
+\begin{itemize}[leftmargin=*]
+    \item Las pruebas unitarias validan logica de controladores, servicios, guards y modulos del backend; el resultado fue exitoso: 159/159 pruebas aprobadas.
+    \item La compilacion del frontend valida que la interfaz React/Vite no tenga errores de TypeScript ni fallos de empaquetado; el resultado fue exitoso.
+    \item Las pruebas e2e confirmaron los flujos principales del backend contra la aplicacion NestJS y la base PostgreSQL activa; el resultado fue exitoso: 40/40 pruebas aprobadas.
+    \item Comparando resultados reales con esperados, el proyecto cumple en pruebas unitarias, build del frontend y pruebas e2e del backend. Quedan solamente advertencias no bloqueantes relacionadas con \texttt{pg} y cierre asincrono de Jest.
+\end{itemize}
+
+\subsection{Habilidades blandas empleadas en la practica}
+\begin{itemize}[leftmargin=*]
+    \item[$\checkmark$] Pensamiento critico.
+    \item[$\checkmark$] Responsabilidad.
+    \item[$\checkmark$] Comunicacion asertiva.
+    \item[$\checkmark$] Adaptabilidad.
+    \item[$\checkmark$] Resolucion de conflictos.
+\end{itemize}
+
+\subsection{Conclusiones}
+Se elaboro un plan de pruebas completo para el sistema U-Ride tomando como base los requerimientos funcionales y no funcionales documentados. Las pruebas unitarias del backend y la compilacion del frontend fueron exitosas, lo que evidencia estabilidad en componentes internos y construccion de la interfaz.
+
+La ejecucion e2e fue exitosa despues de corregir el ambiente Docker y alinear las expectativas de los tests con el comportamiento real de la API. Con ello se pudo cerrar la validacion integral de los endpoints incluidos en la bateria automatizada.
+
+\subsection{Recomendaciones}
+\begin{itemize}[leftmargin=*]
+    \item Mantener la base de datos levantada antes de las pruebas e2e con \texttt{docker compose up -d db} desde la raiz del proyecto.
+    \item Revisar las advertencias de \texttt{pg} sobre consultas concurrentes para dejar una salida de pruebas mas limpia.
+    \item Incorporar pruebas frontend automatizadas para flujos criticos de login, viajes, solicitudes, reportes y administracion.
+\end{itemize}
+
+\subsection{Referencias}
+
+
+
+
+\vfill
+\end{document}
